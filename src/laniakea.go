@@ -54,11 +54,11 @@ func main() {
 
 	if 0 < len(args) && 0 == strings.Compare(args[0], "clear") {
 		switch args[0] {
-		case "clear":
-			switch true {
-			case 1 < len(args) && 0 == strings.Compare(args[1], "android-studio"):
-				clearAndroidStudio(homeDir);
-			}
+			case "clear":
+				switch true {
+					case 1 < len(args) && 0 == strings.Compare(args[1], "android-studio"):
+						clearAndroidStudio(homeDir);
+				}
 		}
 
 		return;

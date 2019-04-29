@@ -13,13 +13,15 @@ func TestForceRemove(test *testing.T) {
 	}
 
 	fileName := file.Name()
+
 	forceRemove(fileName)
 
-	if _, err := os.Stat(fileName); nil == err {
-		test.Errorf("\033[1;31mThe file was not removed !\033[0m")
-	} else if os.IsNotExist(err) {
-		// the file does not exists
-	} else {
-		test.Errorf("\033[1;31mSchrödinger file !\033[0m")
+	switch _, err := os.Stat(fileName); true {
+		case nil == err:
+			test.Errorf("\033[1;31mThe file was not removed !\033[0m")
+		case os.IsNotExist(err):
+			// the file does not exists
+		default:
+			test.Errorf("\033[1;31mSchrödinger file !\033[0m")
 	}
 }
