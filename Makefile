@@ -8,4 +8,4 @@ install:
 	@./scripts/install.sh;
 
 test:
-	go test src/*.go
+	@go test src/*.go
