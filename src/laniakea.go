@@ -23,18 +23,24 @@ func forceRemove(folder string) {
 
 func clearAndroidStudio(homeDir string) {
 	forceRemove("/Applications/Android Studio.app");
-	forceRemove(homeDir + "/Library/Preferences/AndroidStudio*");
-	forceRemove(homeDir + "/Library/Preferences/com.google.android.");
-	forceRemove(homeDir + "/Library/Preferences/com.android.*");
-	forceRemove(homeDir + "/Library/Application Support/AndroidStudio*");
-	forceRemove(homeDir + "/Library/Logs/AndroidStudio*");
-	forceRemove(homeDir + "/Library/Caches/AndroidStudio*");
-	forceRemove(homeDir + "/.AndroidStudio*");
-	forceRemove(homeDir + "/AndroidStudioProjects");
-	forceRemove(homeDir + "/.gradle");
-	forceRemove(homeDir + "/.android");
-	forceRemove(homeDir + "/Library/Android*");
-	forceRemove(homeDir + "/.emulator_console_auth_token");
+
+	paths := [11]string{
+		"/Library/Preferences/AndroidStudio*",
+		"/Library/Preferences/com.google.android.",
+		"/Library/Preferences/com.android.*",
+		"/Library/Application Support/AndroidStudio*",
+		"/Library/Logs/AndroidStudio*",
+		"/.AndroidStudio*",
+		"/AndroidStudioProjects",
+		"/.gradle",
+		"/.android",
+		"/Library/Android*",
+		"/.emulator_console_auth_token",
+	};
+
+	for _, path := range paths {
+		forceRemove(homeDir + path);
+	}
 }
 
 func main() {
