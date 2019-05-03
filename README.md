@@ -6,7 +6,7 @@ Install:
 make install
 ```
 
-Edit your `~/bashrc`:
+Edit your `~/.bash_profile`:
 
 ```bash
 export GOROOT=/usr/local/go
@@ -15,7 +15,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```
 
 ```bash
-source ~/.bashrc
+source ~/.bash_profile 
 ```
 
 Build:
