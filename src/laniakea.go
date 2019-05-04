@@ -1,9 +1,7 @@
 package main
 
 import (
-	"io"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,26 +44,6 @@ func clearJava(homeDir string) {
 	}
 }
 
-func downloadFile(url string, path string) error {
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
-}
-
 func forceRemove(folder string) {
 	files, err := filepath.Glob(folder)
 	if nil != err {
@@ -81,12 +59,36 @@ func forceRemove(folder string) {
 }
 
 func installJava() {
-	err := downloadFile("http://server.laniakea.sbx.snv.io/jdk-8u201-macosx-x64.dmg", "jdk-8u201-macosx-x64.dmg")
-	// cmd := exec.Command("curl", "https://server.laniakea.sbx.snv.io/jdk-8u201-macosx-x64.dmg", "-o", "jdk-8u201-macosx-x64.dmg")
-	// _, err := cmd.Output()
+	cmd := exec.Command(
+		"curl",
+		"http://laniakea.sbx.snv.io/jdk-8u201-macosx-x64.dmg",
+		"-o",
+		"jdk-8u201-macosx-x64.dmg",
+	)
+	_, err := cmd.Output()
 	if nil != err {
 		panic(err)
 	}
+
+	cmd = exec.Command("hdiutil", "attach", "jdk-8u201-macosx-x64.dmg")
+	_, err = cmd.Output()
+	if nil != err {
+		panic(err)
+	}
+
+	cmd = exec.Command("installer", "-package", "/Volumes/JDK 8 Update 201/JDK 8 Update 201.pkg", "-target", "/")
+	_, err = cmd.Output()
+	if nil != err {
+		panic(err)
+	}
+
+	cmd = exec.Command("hdiutil", "detach", "/Volumes/JDK 8 Update 201/")
+	_, err = cmd.Output()
+	if nil != err {
+		panic(err)
+	}
+
+	forceRemove("jdk-8u201-macosx-x64.dmg");
 }
 
 func isRoot() bool {
