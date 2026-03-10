@@ -2,3 +2,30 @@
 # Binaries #
 ############
 laniakea
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+target/
+*.node
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Coverage
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
