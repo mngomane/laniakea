@@ -81,3 +81,50 @@ pnpm --filter @laniakea/web build
 ### `packages/web/` (React + Vite + Tailwind)
 - `package.json`, `tsconfig.json`, `vite.config.ts`, `tailwind.css`, `index.html`
 - `src/main.tsx`, `src/App.tsx`, `src/components/Layout.tsx`, `src/vite-env.d.ts`
+
+---
+
+## Migration MongoDB → PostgreSQL
+
+### PGlite Spike (2026-03-14) — ALL PASS
+
+| Feature | Result | Version |
+|---------|--------|---------|
+| `CREATE TYPE ... AS ENUM` | PASS | `@electric-sql/pglite@0.3.16` |
+| JSONB + `->>'key'` operator | PASS | `@electric-sql/pglite@0.3.16` |
+| Partial unique index (`WHERE ...`) | PASS | `@electric-sql/pglite@0.3.16` |
+
+PGlite est validé comme backend de test in-process pour la migration.
+
+### Pattern transactionnel — `DbClient`
+
+Type unifié dans `src/db/types.ts` :
+
+```ts
+type DbClient = PostgresJsDatabase<typeof schema>;
+```
+
+Toute fonction service accepte un paramètre optionnel `client: DbClient = getDb()` pour propager les transactions :
+
+```ts
+async function createUser(data: NewUser, client: DbClient = getDb()) {
+  return client.insert(users).values(data).returning();
+}
+```
+
+### Contrainte d'ordre — Suppression modèles Mongoose
+
+Les fichiers `src/models/*.ts` ne doivent être supprimés qu'après :
+
+1. **Tous** services, routes, middlewares et tests migrés vers Drizzle
+2. `tsc --noEmit` = 0 erreur
+3. `grep -r "from.*models/<model>"` = vide pour chaque modèle
+
+**Ordre de suppression** (dépendance inverse, du plus isolé au plus référencé) :
+
+1. `refresh-token.model.ts`
+2. `notification.model.ts`
+3. `achievement.model.ts`
+4. `activity.model.ts`
+5. `team.model.ts`
+6. `user.model.ts` (dernier — dépendance de tous les autres)
