@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import { User } from "../../src/models/user.model.js";
 import { Team } from "../../src/models/team.model.js";
 import { ForbiddenError } from "../../src/middleware/error-handler.js";
-import { NotFoundError } from "../../src/services/user.service.js";
 
 // Mock the engine-dependent gamification functions
 vi.mock("../../src/services/gamification.service.js", () => ({
@@ -16,7 +15,7 @@ vi.mock("../../src/services/gamification.service.js", () => ({
         : 0,
     weeklyXp: weeklyXps.reduce((a, b) => a + b, 0),
   }),
-  sortUserLeaderboard: (entries: Array<{ xp: number; currentStreak: number; rank: number }>) => {
+  sortUserLeaderboard: (entries: { xp: number; currentStreak: number; rank: number }[]) => {
     const sorted = [...entries].sort((a, b) => {
       if (b.xp !== a.xp) return b.xp - a.xp;
       return b.currentStreak - a.currentStreak;
@@ -29,13 +28,10 @@ vi.mock("../../src/services/gamification.service.js", () => ({
 const {
   createTeam,
   getTeamBySlug,
-  getPublicTeams,
-  getUserTeams,
   joinTeam,
   leaveTeam,
   kickMember,
   updateMemberRole,
-  updateTeam,
   deleteTeam,
   regenerateInviteCode,
   recalculateTeamStats,

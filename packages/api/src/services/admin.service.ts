@@ -160,7 +160,7 @@ export async function listAchievements(): Promise<IAchievement[]> {
   return Achievement.find().sort({ createdAt: -1 });
 }
 
-export async function getRecentActivities(limit: number = 50): Promise<unknown[]> {
+export async function getRecentActivities(limit = 50): Promise<unknown[]> {
   return Activity.find()
     .sort({ createdAt: -1 })
     .limit(limit)

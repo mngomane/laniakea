@@ -8,4 +8,10 @@ export default tseslint.config(
   {
     ignores: ["src/", "scripts/", "**/dist/", "**/node_modules/", "**/coverage/", "**/*.node"],
   },
+  {
+    files: ["**/test/**/*.ts", "**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
 );

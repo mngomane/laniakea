@@ -274,8 +274,6 @@ export async function recalculateTeamStats(teamId: string): Promise<void> {
   const users = await User.find({ _id: { $in: memberIds } });
 
   const memberXps = users.map((u) => u.xp);
-  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
   // For weekly XP, we approximate using activity records
   // Simplified: just pass 0 for weekly — full implementation would query activities
   const weeklyXps = users.map(() => 0);

@@ -1,5 +1,5 @@
 interface ActivityCalendarProps {
-  activities: Array<{ createdAt: string }>;
+  activities: { createdAt: string }[];
 }
 
 function getDayKey(date: Date): string {
@@ -17,7 +17,7 @@ export function ActivityCalendar({ activities }: ActivityCalendarProps) {
   }
 
   // Generate 90 days grid (13 weeks)
-  const days: Array<{ key: string; count: number }> = [];
+  const days: { key: string; count: number }[] = [];
   for (let i = 89; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);

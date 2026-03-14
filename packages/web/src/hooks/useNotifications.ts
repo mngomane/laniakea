@@ -9,7 +9,7 @@ interface NotificationsResponse {
   total: number;
 }
 
-export function useNotifications(page: number = 1, limit: number = 20) {
+export function useNotifications(page = 1, limit = 20) {
   const setNotifications = useNotificationStore((s) => s.setNotifications);
 
   const query = useQuery({
@@ -81,18 +81,16 @@ export function useNotificationWebSocket() {
           addNotification(msg.data);
         }
       } catch {
-        // Ignore
+        // Ignore parse errors
       }
     }
 
-    // Listen for WebSocket messages on all open sockets
-    // The leaderboard hook already manages the WS connection
-    // We just add a listener via a custom event or use a shared approach
-    // For now, the notification updates will come through the same WS
-    // and be handled there. The polling via useUnreadCount serves as fallback.
+    // Listen for WebSocket messages via the shared connection
+    // The polling via useUnreadCount serves as fallback
+    window.addEventListener("message", handleWsMessage as EventListener);
 
     return () => {
-      // cleanup
+      window.removeEventListener("message", handleWsMessage as EventListener);
     };
   }, [addNotification]);
 }

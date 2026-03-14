@@ -40,7 +40,7 @@ export async function createNotification(
 
   // Email if enabled
   if (user.notificationPreferences.email && user.email) {
-    let html = "";
+    let html: string;
     if (type === "level_up") {
       html = levelUpEmailTemplate(user.username, (data?.level as number) ?? user.level);
     } else if (type === "achievement") {

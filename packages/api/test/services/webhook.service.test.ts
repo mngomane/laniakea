@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import crypto from "node:crypto";
 import { Hono } from "hono";
 import { User } from "../../src/models/user.model.js";

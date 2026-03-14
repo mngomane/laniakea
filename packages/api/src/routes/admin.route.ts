@@ -22,7 +22,7 @@ import {
   getRecentActivities,
 } from "../services/admin.service.js";
 
-type Env = { Variables: { userId: string } };
+interface Env { Variables: { userId: string } }
 const adminRoute = new Hono<Env>();
 
 adminRoute.use("*", authMiddleware);

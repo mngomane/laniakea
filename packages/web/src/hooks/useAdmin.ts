@@ -49,7 +49,7 @@ export function useGlobalStats() {
   });
 }
 
-export function useAdminUsers(page: number = 1, limit: number = 20, search?: string) {
+export function useAdminUsers(page = 1, limit = 20, search?: string) {
   return useQuery({
     queryKey: ["admin", "users", page, limit, search],
     queryFn: () => {
@@ -88,7 +88,7 @@ export function useBanUser() {
   });
 }
 
-export function useAdminTeams(page: number = 1, limit: number = 20, search?: string) {
+export function useAdminTeams(page = 1, limit = 20, search?: string) {
   return useQuery({
     queryKey: ["admin", "teams", page, limit, search],
     queryFn: () => {

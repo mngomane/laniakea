@@ -3,10 +3,6 @@ import { apiRequest } from "../api/client.js";
 import type { Activity } from "../stores/game.store.js";
 import { useAuthStore } from "../stores/auth.store.js";
 
-interface ActivitiesResponse {
-  activities: Activity[];
-}
-
 export function useActivities(limit = 20) {
   const userId = useAuthStore((s) => s.user?._id);
 

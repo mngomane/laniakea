@@ -11,7 +11,7 @@ process.env.JWT_SECRET =
   process.env.JWT_SECRET || "dev-jwt-secret-change-in-production-min32chars";
 
 function generateTestToken(userId: string): string {
-  return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" });
+  return jwt.sign({ userId }, process.env.JWT_SECRET ?? "", { expiresIn: "15m" });
 }
 
 function createTestApp(): Hono {

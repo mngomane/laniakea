@@ -36,7 +36,7 @@ export function useMyTeams() {
   });
 }
 
-export function usePublicTeams(page: number = 1, limit: number = 20) {
+export function usePublicTeams(page = 1, limit = 20) {
   return useQuery({
     queryKey: ["teams", "public", page, limit],
     queryFn: () => apiRequest<TeamsResponse>(`/teams?page=${page}&limit=${limit}`),
@@ -56,7 +56,7 @@ export function useTeamLeaderboard(slug: string) {
   return useQuery({
     queryKey: ["teams", slug, "leaderboard"],
     queryFn: () =>
-      apiRequest<Array<{ userId: string; username: string; xp: number; level: number; currentStreak: number; rank: number }>>(
+      apiRequest<{ userId: string; username: string; xp: number; level: number; currentStreak: number; rank: number }[]>(
         `/teams/${slug}/leaderboard`,
       ),
     enabled: !!slug,

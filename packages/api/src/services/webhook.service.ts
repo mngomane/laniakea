@@ -1,5 +1,4 @@
 import { User } from "../models/user.model.js";
-import { Activity } from "../models/activity.model.js";
 import { recordActivity } from "./activity.service.js";
 import type { ActivityType, RecordActivityInput } from "../types/index.js";
 
@@ -30,7 +29,7 @@ function markProcessed(deliveryId: string): void {
 }
 
 interface PushPayload {
-  commits: Array<{ id: string; message: string; author: { username?: string } }>;
+  commits: { id: string; message: string; author: { username?: string } }[];
   sender: { id: number; login: string };
   repository: { full_name: string };
   ref: string;

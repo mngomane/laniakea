@@ -10,7 +10,7 @@ export function AchievementsPage() {
 
   const achievements = data?.achievements ?? [];
 
-  const filters: Array<{ value: FilterType; label: string }> = [
+  const filters: { value: FilterType; label: string }[] = [
     { value: "all", label: "All" },
     { value: "unlocked", label: "Unlocked" },
     { value: "locked", label: "Locked" },

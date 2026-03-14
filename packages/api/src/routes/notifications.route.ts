@@ -14,7 +14,7 @@ import {
 import { User } from "../models/user.model.js";
 import { NotFoundError } from "../services/user.service.js";
 
-type Env = { Variables: { userId: string } };
+interface Env { Variables: { userId: string } }
 const notificationsRoute = new Hono<Env>();
 
 notificationsRoute.use("*", authMiddleware);

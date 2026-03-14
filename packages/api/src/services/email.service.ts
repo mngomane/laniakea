@@ -57,7 +57,7 @@ export function teamInviteEmailTemplate(name: string, teamName: string): string 
   return `<h2>New Team Member!</h2><p>Hey ${name}, someone just joined your team <strong>${teamName}</strong>!</p>`;
 }
 
-export function digestEmailTemplate(name: string, notifications: Array<{ title: string; body: string }>): string {
+export function digestEmailTemplate(name: string, notifications: { title: string; body: string }[]): string {
   const items = notifications.map((n) => `<li><strong>${n.title}</strong>: ${n.body}</li>`).join("");
   return `<h2>Notification Digest</h2><p>Hey ${name}, here's what happened:</p><ul>${items}</ul>`;
 }

@@ -20,10 +20,9 @@ import {
   deleteTeam,
   regenerateInviteCode,
   getTeamLeaderboard,
-  recalculateTeamStats,
 } from "../services/team.service.js";
 
-type Env = { Variables: { userId: string } };
+interface Env { Variables: { userId: string } }
 const teamsRoute = new Hono<Env>();
 
 teamsRoute.use("*", authMiddleware);
