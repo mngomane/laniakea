@@ -1,6 +1,7 @@
 .PHONY: install build test check lint dev dev-web \
        engine-test engine-clippy engine-fmt engine-build \
        api-test api-check web-build web-check \
+       db-generate db-migrate db-push db-studio \
        verify clean legacy-build legacy-test legacy-install
 
 # --- Project-wide ---
@@ -49,6 +50,20 @@ api-test:
 
 api-check:
 	@pnpm --filter @laniakea/api exec tsc --noEmit
+
+# --- Database (Drizzle) ---
+
+db-generate:
+	@pnpm --filter @laniakea/api exec drizzle-kit generate
+
+db-migrate:
+	@pnpm --filter @laniakea/api exec drizzle-kit migrate
+
+db-push:
+	@pnpm --filter @laniakea/api exec drizzle-kit push
+
+db-studio:
+	@pnpm --filter @laniakea/api exec drizzle-kit studio
 
 # --- Web ---
 

@@ -13,7 +13,7 @@ Monorepo managed with pnpm workspaces, combining a Rust computation engine, a No
 | Package | Path | Tech | Description |
 |---------|------|------|-------------|
 | `@laniakea/engine` | `packages/engine/` | Rust, napi-rs | Core engine: XP calculation, streaks, achievements, leaderboard |
-| `@laniakea/api` | `packages/api/` | Hono, Mongoose, Vitest | REST API + WebSocket server |
+| `@laniakea/api` | `packages/api/` | Hono, Drizzle ORM, Vitest | REST API + WebSocket server |
 | `@laniakea/web` | `packages/web/` | React 19, Vite, Tailwind | Frontend application |
 
 ## Prerequisites
@@ -21,7 +21,7 @@ Monorepo managed with pnpm workspaces, combining a Rust computation engine, a No
 - Node.js 22+
 - pnpm 10+
 - Rust toolchain (stable)
-- MongoDB 7+
+- PostgreSQL 15+
 
 ## Quick Start
 
@@ -51,6 +51,10 @@ make dev-web    # Start Vite dev server
 | `make api-check` | API typecheck |
 | `make web-build` | Web production build |
 | `make web-check` | Web typecheck |
+| `make db-generate` | Generate Drizzle migrations |
+| `make db-migrate` | Run Drizzle migrations |
+| `make db-push` | Push schema to database |
+| `make db-studio` | Open Drizzle Studio |
 | `make verify` | Run all checks (engine + API + web) |
 | `make clean` | Remove dist/, target/, node_modules/ |
 
@@ -73,6 +77,7 @@ make dev-web    # Start Vite dev server
 |--------|-------|-------------|
 | POST | `/api/users` | Create user |
 | GET | `/api/users/:id` | Get user profile |
+| GET | `/api/users/me` | Get current user profile |
 
 ### Activities (`/api/activities`)
 
@@ -154,7 +159,7 @@ Connect with a JWT access token as query parameter. The server uses heartbeat pi
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MONGODB_URI` | `mongodb://localhost:27017/laniakea` | MongoDB connection string |
+| `DATABASE_URL` | **(required)** | PostgreSQL connection string |
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment (development, production, test) |
 | `JWT_SECRET` | — | JWT signing secret (min 32 chars) |
@@ -174,16 +179,16 @@ Connect with a JWT access token as query parameter. The server uses heartbeat pi
 ```bash
 make test           # All tests
 make engine-test    # 29 Rust unit tests
-make api-test       # 111 API tests (Vitest)
+make api-test       # 80 API tests (Vitest)
 make verify         # Full verification pipeline
 ```
 
 ## Tech Stack
 
 - **Engine**: Rust, napi-rs (Node.js native addon)
-- **API**: Hono, Mongoose, JWT, Zod, Nodemailer
+- **API**: Hono, Drizzle ORM, JWT, Zod, Nodemailer
 - **Web**: React 19, Vite, Tailwind CSS
-- **Database**: MongoDB
+- **Database**: PostgreSQL
 - **Runtime**: Node.js 22+, pnpm 10+
 
 ## Legacy
