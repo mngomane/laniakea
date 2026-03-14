@@ -1,0 +1,6 @@
+[allowlist]
+  description = "Exclude dependency stores and caches"
+  paths = [
+    '''\.pnpm-store/''',
+    '''node_modules/''',
+  ]
