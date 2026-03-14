@@ -1,4 +1,6 @@
-import { User } from "../models/user.model.js";
+import { eq } from "drizzle-orm";
+import { getDb } from "../config/database.js";
+import { users } from "../db/schema.js";
 import { recordActivity } from "./activity.service.js";
 import type { ActivityType, RecordActivityInput } from "../types/index.js";
 
@@ -16,7 +18,6 @@ function isAlreadyProcessed(deliveryId: string): boolean {
 
 function markProcessed(deliveryId: string): void {
   if (processedDeliveries.size >= MAX_DELIVERY_CACHE) {
-    // Evict oldest entries
     const oldest = processedDeliveries.keys().next().value;
     if (oldest !== undefined) {
       processedDeliveries.delete(oldest);
@@ -153,7 +154,12 @@ export async function processGitHubWebhook(
     return { processed: 0, skipped: true, reason: "no sender" };
   }
 
-  const user = await User.findOne({ githubId: senderId });
+  const db = getDb();
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.githubId, senderId))
+    .limit(1);
   if (!user) {
     console.warn(
       `Webhook: GitHub user ${senderId} not registered in Laniakea`,
@@ -161,30 +167,29 @@ export async function processGitHubWebhook(
     return { processed: 0, skipped: true, reason: "user not found" };
   }
 
-  const userId = (user._id as { toString(): string }).toString();
-  let activities: ActivityToRecord[];
+  let activityList: ActivityToRecord[];
 
   switch (eventType) {
     case "push":
-      activities = parseActivitiesFromPush(payload as unknown as PushPayload);
+      activityList = parseActivitiesFromPush(payload as unknown as PushPayload);
       break;
     case "pull_request":
-      activities = parseActivitiesFromPR(payload as unknown as PullRequestPayload);
+      activityList = parseActivitiesFromPR(payload as unknown as PullRequestPayload);
       break;
     case "pull_request_review":
-      activities = parseActivitiesFromReview(payload as unknown as PullRequestReviewPayload);
+      activityList = parseActivitiesFromReview(payload as unknown as PullRequestReviewPayload);
       break;
     case "issues":
-      activities = parseActivitiesFromIssue(payload as unknown as IssuesPayload);
+      activityList = parseActivitiesFromIssue(payload as unknown as IssuesPayload);
       break;
     default:
       return { processed: 0, skipped: true, reason: `unsupported event: ${eventType}` };
   }
 
   let processed = 0;
-  for (const activity of activities) {
+  for (const activity of activityList) {
     const input: RecordActivityInput = {
-      userId,
+      userId: user.id,
       type: activity.type,
       metadata: activity.metadata,
     };

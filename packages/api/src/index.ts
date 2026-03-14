@@ -13,8 +13,9 @@ import { notificationsRoute } from "./routes/notifications.route.js";
 import { adminRoute } from "./routes/admin.route.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { setupWebSocket } from "./ws/index.js";
+import type { AppEnv } from "./types/index.js";
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
 app.onError(errorHandler);
 
@@ -31,8 +32,8 @@ app.route("/api/admin", adminRoute);
 export { app };
 
 async function main(): Promise<void> {
-  await connectDatabase(env.MONGODB_URI);
-  console.log("Connected to MongoDB");
+  await connectDatabase(env.DATABASE_URL);
+  console.log("Connected to PostgreSQL");
 
   const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
     console.log(`Server running on http://localhost:${info.port}`);

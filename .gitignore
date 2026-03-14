@@ -29,3 +29,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Claude local audit reports
+CLAUDE.local.md

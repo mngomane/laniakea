@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { v7 as uuidv7 } from "uuid";
 import { Hono } from "hono";
 import { usersRoute } from "../../src/routes/users.route.js";
 import { authRoute } from "../../src/routes/auth.route.js";
 import { errorHandler } from "../../src/middleware/error-handler.js";
-import mongoose from "mongoose";
 
 const app = new Hono();
 app.onError(errorHandler);
@@ -70,9 +70,9 @@ describe("users.route", () => {
       },
       body: JSON.stringify({ username: "getuser" }),
     });
-    const created = (await createRes.json()) as { _id: string };
+    const created = (await createRes.json()) as { id: string };
 
-    const res = await app.request(`/api/users/${created._id}`, {
+    const res = await app.request(`/api/users/${created.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status).toBe(200);
@@ -81,7 +81,7 @@ describe("users.route", () => {
   });
 
   it("GET /api/users/:nonexistent returns 404", async () => {
-    const fakeId = new mongoose.Types.ObjectId().toString();
+    const fakeId = uuidv7();
     const res = await app.request(`/api/users/${fakeId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });

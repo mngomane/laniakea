@@ -1,5 +1,7 @@
-import { User } from "../models/user.model.js";
-import type { IUser } from "../models/user.model.js";
+import { eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../config/database.js";
+import { users } from "../db/schema.js";
 import type { CreateUserInput } from "../types/index.js";
 
 export class NotFoundError extends Error {
@@ -9,19 +11,34 @@ export class NotFoundError extends Error {
   }
 }
 
-export async function createUser(input: CreateUserInput): Promise<IUser> {
-  const user = new User(input);
-  return user.save();
+export type UserRow = typeof users.$inferSelect;
+export type SafeUser = Omit<UserRow, "passwordHash">;
+
+export function stripPasswordHash(user: UserRow): SafeUser {
+  const { passwordHash: _, ...safe } = user;
+  return safe;
 }
 
-export async function getUserById(id: string): Promise<IUser> {
-  const user = await User.findById(id);
+export async function createUser(input: CreateUserInput): Promise<UserRow> {
+  const db = getDb();
+  const [user] = await db
+    .insert(users)
+    .values({ id: uuidv7(), username: input.username })
+    .returning();
+  if (!user) throw new Error("Failed to create user");
+  return user;
+}
+
+export async function getUserById(id: string): Promise<UserRow> {
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, id));
   if (!user) {
     throw new NotFoundError(`User not found: ${id}`);
   }
   return user;
 }
 
-export async function getAllUsers(): Promise<IUser[]> {
-  return User.find();
+export async function getAllUsers(): Promise<UserRow[]> {
+  const db = getDb();
+  return db.select().from(users);
 }

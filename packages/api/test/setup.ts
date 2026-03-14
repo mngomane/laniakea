@@ -1,32 +1,63 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
-import mongoose from "mongoose";
+import { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
 import { beforeAll, afterAll, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { sql } from "drizzle-orm";
+import * as schema from "../src/db/schema.js";
 
-// Set test secrets before any module loads env
-process.env.GITHUB_WEBHOOK_SECRET = "test-webhook-secret-min-32-characters-long";
+// Set test env vars before any module loads env
+process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
+process.env.GITHUB_WEBHOOK_SECRET =
+  "test-webhook-secret-min-32-characters-long";
 
-let mongod: MongoMemoryServer;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+let pg: PGlite;
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  const uri = mongod.getUri();
-  await mongoose.connect(uri);
+  pg = new PGlite();
+
+  const db = drizzle(pg, { schema });
+
+  // Create enums and tables via raw DDL
+  const ddl = readFileSync(join(__dirname, "ddl.sql"), "utf-8");
+  await pg.exec(ddl);
+
+  // Apply triggers
+  const triggers = readFileSync(
+    join(__dirname, "../src/db/triggers.sql"),
+    "utf-8",
+  );
+  await pg.exec(triggers);
+
+  // Inject the DB into the database module so getDb() works
+  const dbModule = await import("../src/config/database.js");
+  // @ts-expect-error -- accessing private module state for tests
+  dbModule.__setTestDb(db);
 });
 
 afterEach(async () => {
-  const collections = await mongoose.connection.db?.collections();
-  if (collections) {
-    for (const collection of collections) {
-      await collection.drop().catch(() => undefined);
-    }
-  }
-  // Recreate indexes after dropping collections
-  for (const model of Object.values(mongoose.models)) {
-    await model.createIndexes();
-  }
+  // Truncate all tables between tests (order matters for FK constraints)
+  const db = (await import("../src/config/database.js")).getDb();
+  await db.execute(sql`
+    TRUNCATE
+      team_members,
+      user_achievements,
+      refresh_tokens,
+      notifications,
+      activities,
+      teams,
+      achievements,
+      users
+    CASCADE
+  `);
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongod.stop();
+  const dbModule = await import("../src/config/database.js");
+  // @ts-expect-error -- accessing private module state for tests
+  dbModule.__setTestDb(null);
+  await pg.close();
 });

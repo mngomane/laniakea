@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import crypto from "node:crypto";
 import { Hono } from "hono";
-import { User } from "../../src/models/user.model.js";
-import { Activity } from "../../src/models/activity.model.js";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../../src/config/database.js";
+import { users, activities } from "../../src/db/schema.js";
+import { eq } from "drizzle-orm";
 import {
   processGitHubWebhook,
   clearDeliveryCache,
@@ -22,12 +24,15 @@ describe("webhook.service", () => {
 
   beforeEach(async () => {
     clearDeliveryCache();
-    const user = await User.create({
+    const db = getDb();
+    const id = uuidv7();
+    await db.insert(users).values({
+      id,
       username: "webhookuser",
       githubId: "12345",
       authProvider: "github",
     });
-    userId = (user._id as { toString(): string }).toString();
+    userId = id;
   });
 
   describe("processGitHubWebhook", () => {
@@ -47,9 +52,13 @@ describe("webhook.service", () => {
       expect(result.processed).toBe(2);
       expect(result.skipped).toBe(false);
 
-      const activities = await Activity.find({ userId });
-      expect(activities).toHaveLength(2);
-      expect(activities[0]!.type).toBe("Commit");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows).toHaveLength(2);
+      expect(rows[0]!.type).toBe("Commit");
     });
 
     it("should process pull_request opened events", async () => {
@@ -63,8 +72,12 @@ describe("webhook.service", () => {
       const result = await processGitHubWebhook("pull_request", "delivery-2", payload);
 
       expect(result.processed).toBe(1);
-      const activities = await Activity.find({ userId });
-      expect(activities[0]!.type).toBe("PullRequest");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows[0]!.type).toBe("PullRequest");
     });
 
     it("should process pull_request merged events", async () => {
@@ -78,8 +91,12 @@ describe("webhook.service", () => {
       const result = await processGitHubWebhook("pull_request", "delivery-3", payload);
 
       expect(result.processed).toBe(1);
-      const activities = await Activity.find({ userId });
-      expect(activities[0]!.type).toBe("Merge");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows[0]!.type).toBe("Merge");
     });
 
     it("should process pull_request_review submitted events", async () => {
@@ -94,8 +111,12 @@ describe("webhook.service", () => {
       const result = await processGitHubWebhook("pull_request_review", "delivery-4", payload);
 
       expect(result.processed).toBe(1);
-      const activities = await Activity.find({ userId });
-      expect(activities[0]!.type).toBe("Review");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows[0]!.type).toBe("Review");
     });
 
     it("should process issues closed events", async () => {
@@ -109,8 +130,12 @@ describe("webhook.service", () => {
       const result = await processGitHubWebhook("issues", "delivery-5", payload);
 
       expect(result.processed).toBe(1);
-      const activities = await Activity.find({ userId });
-      expect(activities[0]!.type).toBe("Issue");
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows[0]!.type).toBe("Issue");
     });
 
     it("should skip duplicate delivery IDs (idempotence)", async () => {
@@ -126,8 +151,12 @@ describe("webhook.service", () => {
 
       expect(result.skipped).toBe(true);
       expect(result.reason).toBe("duplicate delivery");
-      const activities = await Activity.find({ userId });
-      expect(activities).toHaveLength(1);
+      const db = getDb();
+      const rows = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.userId, userId));
+      expect(rows).toHaveLength(1);
     });
 
     it("should skip events from unregistered GitHub users", async () => {

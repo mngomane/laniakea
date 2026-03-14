@@ -10,7 +10,7 @@ export async function broadcastLeaderboard(): Promise<void> {
 
   const users = await getAllUsers();
   const entries: LeaderboardEntry[] = users.map((user) => ({
-    userId: (user._id as { toString(): string }).toString(),
+    userId: user.id,
     username: user.username,
     xp: user.xp,
     level: user.level,

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
 import jwt from "jsonwebtoken";
-import { User } from "../../src/models/user.model.js";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../../src/config/database.js";
+import { users } from "../../src/db/schema.js";
 import { authMiddleware } from "../../src/middleware/auth.middleware.js";
 import { adminMiddleware } from "../../src/middleware/admin.middleware.js";
 import { errorHandler } from "../../src/middleware/error-handler.js";
@@ -22,18 +24,27 @@ function createTestApp(): Hono {
   return app;
 }
 
+async function createTestUser(
+  overrides: Partial<typeof users.$inferInsert> = {},
+): Promise<typeof users.$inferSelect> {
+  const db = getDb();
+  const [user] = await db
+    .insert(users)
+    .values({
+      id: uuidv7(),
+      username: `user-${uuidv7().slice(0, 8)}`,
+      ...overrides,
+    })
+    .returning();
+  return user!;
+}
+
 describe("adminMiddleware", () => {
   it("should allow admin users through", async () => {
-    const user = await User.create({
-      username: "adminuser",
-      role: "admin",
-      banned: false,
-    });
+    const user = await createTestUser({ username: "adminuser", role: "admin" });
 
     const app = createTestApp();
-    const token = generateTestToken(
-      (user._id as { toString(): string }).toString(),
-    );
+    const token = generateTestToken(user.id);
 
     const res = await app.request("/admin/dashboard", {
       headers: { Authorization: `Bearer ${token}` },
@@ -45,16 +56,10 @@ describe("adminMiddleware", () => {
   });
 
   it("should reject non-admin users with 403", async () => {
-    const user = await User.create({
-      username: "regularuser",
-      role: "user",
-      banned: false,
-    });
+    const user = await createTestUser({ username: "regularuser", role: "user" });
 
     const app = createTestApp();
-    const token = generateTestToken(
-      (user._id as { toString(): string }).toString(),
-    );
+    const token = generateTestToken(user.id);
 
     const res = await app.request("/admin/dashboard", {
       headers: { Authorization: `Bearer ${token}` },
@@ -66,16 +71,14 @@ describe("adminMiddleware", () => {
   });
 
   it("should reject banned admin users with 403", async () => {
-    const user = await User.create({
+    const user = await createTestUser({
       username: "bannedadmin",
       role: "admin",
       banned: true,
     });
 
     const app = createTestApp();
-    const token = generateTestToken(
-      (user._id as { toString(): string }).toString(),
-    );
+    const token = generateTestToken(user.id);
 
     const res = await app.request("/admin/dashboard", {
       headers: { Authorization: `Bearer ${token}` },

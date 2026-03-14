@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export interface AppEnv {
+  Variables: { userId: string };
+}
+
 export const ActivityTypeEnum = z.enum([
   "Commit",
   "PullRequest",

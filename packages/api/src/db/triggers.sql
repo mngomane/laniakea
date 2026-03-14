@@ -9,7 +9,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Template: copy and adjust table name for each target table.
 -- Tables: users, teams, activities, notifications
 
 CREATE OR REPLACE TRIGGER trg_users_updated_at
@@ -31,3 +30,18 @@ CREATE OR REPLACE TRIGGER trg_notifications_updated_at
   BEFORE UPDATE ON notifications
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
+
+-- Auto-set expires_at = created_at + 90 days on notification insert.
+
+CREATE OR REPLACE FUNCTION set_notification_expires_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.expires_at = NEW.created_at + INTERVAL '90 days';
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_notifications_expires_at
+  BEFORE INSERT ON notifications
+  FOR EACH ROW
+  EXECUTE FUNCTION set_notification_expires_at();

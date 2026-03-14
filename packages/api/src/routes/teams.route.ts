@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import type { AppEnv } from "../types/index.js";
+import { validateUUID } from "../middleware/validate-uuid.js";
 import {
   CreateTeamSchema,
   UpdateTeamSchema,
@@ -22,8 +24,7 @@ import {
   getTeamLeaderboard,
 } from "../services/team.service.js";
 
-interface Env { Variables: { userId: string } }
-const teamsRoute = new Hono<Env>();
+const teamsRoute = new Hono<AppEnv>();
 
 teamsRoute.use("*", authMiddleware);
 
@@ -97,7 +98,7 @@ teamsRoute.post("/:slug/leave", async (c) => {
 });
 
 // Kick member
-teamsRoute.delete("/:slug/members/:userId", async (c) => {
+teamsRoute.delete("/:slug/members/:userId", validateUUID("userId"), async (c) => {
   const requesterId = c.get("userId");
   const slug = c.req.param("slug");
   const targetUserId = c.req.param("userId");
@@ -106,7 +107,7 @@ teamsRoute.delete("/:slug/members/:userId", async (c) => {
 });
 
 // Update member role
-teamsRoute.put("/:slug/members/:userId/role", async (c) => {
+teamsRoute.put("/:slug/members/:userId/role", validateUUID("userId"), async (c) => {
   const requesterId = c.get("userId");
   const slug = c.req.param("slug");
   const targetUserId = c.req.param("userId");
@@ -135,7 +136,11 @@ teamsRoute.get("/:slug/leaderboard", async (c) => {
 teamsRoute.get("/:slug/stats", async (c) => {
   const slug = c.req.param("slug");
   const team = await getTeamBySlug(slug);
-  return c.json(team.stats);
+  return c.json({
+    totalXp: team.totalXp,
+    memberCount: team.memberCount,
+    weeklyXp: team.weeklyXp,
+  });
 });
 
 export { teamsRoute };

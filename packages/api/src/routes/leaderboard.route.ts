@@ -1,15 +1,16 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types/index.js";
 import { getAllUsers } from "../services/user.service.js";
 import { sortUserLeaderboard } from "../services/gamification.service.js";
 import type { LeaderboardEntry } from "@laniakea/engine";
 
-export const leaderboardRoute = new Hono();
+export const leaderboardRoute = new Hono<AppEnv>();
 
 leaderboardRoute.get("/", async (c) => {
   const users = await getAllUsers();
 
   const entries: LeaderboardEntry[] = users.map((user) => ({
-    userId: (user._id as { toString(): string }).toString(),
+    userId: user.id,
     username: user.username,
     xp: user.xp,
     level: user.level,

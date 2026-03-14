@@ -1,8 +1,9 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types/index.js";
 import { webhookSignatureMiddleware, getRawBody } from "../middleware/webhook.middleware.js";
 import { processGitHubWebhook } from "../services/webhook.service.js";
 
-export const webhooksRoute = new Hono();
+export const webhooksRoute = new Hono<AppEnv>();
 
 webhooksRoute.post("/github", webhookSignatureMiddleware, async (c) => {
   const eventType = c.req.header("X-GitHub-Event");

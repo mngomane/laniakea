@@ -1,9 +1,10 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types/index.js";
 import { RecordActivitySchema } from "../types/index.js";
 import { recordActivity } from "../services/activity.service.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
-export const activitiesRoute = new Hono();
+export const activitiesRoute = new Hono<AppEnv>();
 
 activitiesRoute.use("/*", authMiddleware);
 

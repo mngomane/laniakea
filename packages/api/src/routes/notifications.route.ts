@@ -1,5 +1,7 @@
 import { Hono } from "hono";
+import { eq } from "drizzle-orm";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import type { AppEnv } from "../types/index.js";
 import {
   NotificationQuerySchema,
   UpdateNotificationPreferencesSchema,
@@ -11,11 +13,13 @@ import {
   getUnreadCount,
   deleteNotification,
 } from "../services/notification.service.js";
-import { User } from "../models/user.model.js";
+import { getDb } from "../config/database.js";
+import { users } from "../db/schema.js";
 import { NotFoundError } from "../services/user.service.js";
+import type { emailDigestEnum } from "../db/schema.js";
+import { validateUUID } from "../middleware/validate-uuid.js";
 
-interface Env { Variables: { userId: string } }
-const notificationsRoute = new Hono<Env>();
+const notificationsRoute = new Hono<AppEnv>();
 
 notificationsRoute.use("*", authMiddleware);
 
@@ -41,9 +45,18 @@ notificationsRoute.get("/unread-count", async (c) => {
 // Get notification preferences
 notificationsRoute.get("/preferences", async (c) => {
   const userId = c.get("userId");
-  const user = await User.findById(userId);
+  const db = getDb();
+  const [user] = await db
+    .select({
+      inApp: users.notifyInApp,
+      email: users.notifyEmail,
+      emailDigest: users.notifyEmailDigest,
+      mutedTypes: users.notifyMutedTypes,
+    })
+    .from(users)
+    .where(eq(users.id, userId));
   if (!user) throw new NotFoundError(`User not found: ${userId}`);
-  return c.json(user.notificationPreferences);
+  return c.json(user);
 });
 
 // Update notification preferences
@@ -52,19 +65,29 @@ notificationsRoute.put("/preferences", async (c) => {
   const body = await c.req.json();
   const input = UpdateNotificationPreferencesSchema.parse(body);
 
-  const update: Record<string, unknown> = {};
-  if (input.inApp !== undefined) update["notificationPreferences.inApp"] = input.inApp;
-  if (input.email !== undefined) update["notificationPreferences.email"] = input.email;
-  if (input.emailDigest !== undefined) update["notificationPreferences.emailDigest"] = input.emailDigest;
-  if (input.mutedTypes !== undefined) update["notificationPreferences.mutedTypes"] = input.mutedTypes;
+  const db = getDb();
+  const setValues: Partial<typeof users.$inferInsert> = {};
+  if (input.inApp !== undefined) setValues.notifyInApp = input.inApp;
+  if (input.email !== undefined) setValues.notifyEmail = input.email;
+  if (input.emailDigest !== undefined) setValues.notifyEmailDigest = input.emailDigest as (typeof emailDigestEnum.enumValues)[number];
+  if (input.mutedTypes !== undefined) setValues.notifyMutedTypes = input.mutedTypes;
 
-  const user = await User.findByIdAndUpdate(userId, { $set: update }, { new: true });
+  const [user] = await db
+    .update(users)
+    .set(setValues)
+    .where(eq(users.id, userId))
+    .returning({
+      inApp: users.notifyInApp,
+      email: users.notifyEmail,
+      emailDigest: users.notifyEmailDigest,
+      mutedTypes: users.notifyMutedTypes,
+    });
   if (!user) throw new NotFoundError(`User not found: ${userId}`);
-  return c.json(user.notificationPreferences);
+  return c.json(user);
 });
 
 // Mark one as read
-notificationsRoute.patch("/:id/read", async (c) => {
+notificationsRoute.patch("/:id/read", validateUUID("id"), async (c) => {
   const userId = c.get("userId");
   const notifId = c.req.param("id");
   await markAsRead(userId, notifId);
@@ -79,7 +102,7 @@ notificationsRoute.patch("/read-all", async (c) => {
 });
 
 // Delete notification
-notificationsRoute.delete("/:id", async (c) => {
+notificationsRoute.delete("/:id", validateUUID("id"), async (c) => {
   const userId = c.get("userId");
   const notifId = c.req.param("id");
   await deleteNotification(userId, notifId);

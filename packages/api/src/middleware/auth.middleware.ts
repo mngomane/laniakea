@@ -1,7 +1,8 @@
 import type { MiddlewareHandler } from "hono";
+import type { AppEnv } from "../types/index.js";
 import { verifyAccessToken } from "../services/auth.service.js";
 
-export const authMiddleware: MiddlewareHandler = async (c, next) => {
+export const authMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   const authHeader = c.req.header("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return c.json({ error: "Missing or invalid Authorization header" }, 401);

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types/index.js";
 import {
   RegisterSchema,
   LoginSchema,
@@ -11,9 +12,10 @@ import {
   refreshAccessToken,
   revokeRefreshToken,
 } from "../services/auth.service.js";
+import { stripPasswordHash } from "../services/user.service.js";
 import { env } from "../config/env.js";
 
-export const authRoute = new Hono();
+export const authRoute = new Hono<AppEnv>();
 
 authRoute.post("/register", async (c) => {
   const body = await c.req.json();
@@ -30,7 +32,7 @@ authRoute.post("/register", async (c) => {
     parsed.data.email,
     parsed.data.password,
   );
-  return c.json({ user, tokens }, 201);
+  return c.json({ user: stripPasswordHash(user), tokens }, 201);
 });
 
 authRoute.post("/login", async (c) => {
@@ -44,7 +46,7 @@ authRoute.post("/login", async (c) => {
   }
 
   const { user, tokens } = await login(parsed.data.email, parsed.data.password);
-  return c.json({ user, tokens }, 200);
+  return c.json({ user: stripPasswordHash(user), tokens }, 200);
 });
 
 authRoute.get("/github", (c) => {
@@ -64,7 +66,7 @@ authRoute.get("/github/callback", async (c) => {
   }
 
   const { user, tokens } = await githubOAuth(code);
-  return c.json({ user, tokens }, 200);
+  return c.json({ user: stripPasswordHash(user), tokens }, 200);
 });
 
 authRoute.post("/refresh", async (c) => {

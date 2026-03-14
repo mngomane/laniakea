@@ -1,7 +1,8 @@
-import { Activity } from "../models/activity.model.js";
-import type { IActivity } from "../models/activity.model.js";
-import { User } from "../models/user.model.js";
-import type { IUser } from "../models/user.model.js";
+import { eq } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../config/database.js";
+import { users, activities, teamMembers } from "../db/schema.js";
+import type { UserRow } from "./user.service.js";
 import type { RecordActivityInput } from "../types/index.js";
 import {
   calculateActivityXp,
@@ -14,17 +15,20 @@ import { recalculateTeamStats } from "./team.service.js";
 import { createNotification } from "./notification.service.js";
 import type { XpResult, StreakResult } from "@laniakea/engine";
 
+export type ActivityRow = typeof activities.$inferSelect;
+
 export interface RecordActivityResult {
-  activity: IActivity;
+  activity: ActivityRow;
   xpResult: XpResult;
   streakResult: StreakResult;
-  user: IUser;
+  user: UserRow;
 }
 
 export async function recordActivity(
   input: RecordActivityInput,
 ): Promise<RecordActivityResult> {
-  const user = await User.findById(input.userId);
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, input.userId));
   if (!user) {
     throw new NotFoundError(`User not found: ${input.userId}`);
   }
@@ -39,36 +43,48 @@ export async function recordActivity(
   );
 
   const xpResult = calculateActivityXp(input.type, streakResult.multiplier);
-
   const levelInfo = calculateUserLevel(user.xp + xpResult.totalXp);
 
-  user.xp += xpResult.totalXp;
-  user.level = levelInfo.level;
-  user.currentStreak = streakResult.currentStreak;
-  user.longestStreak = streakResult.longestStreak;
-  user.lastActivityDate = new Date();
-  await user.save();
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      xp: user.xp + xpResult.totalXp,
+      level: levelInfo.level,
+      currentStreak: streakResult.currentStreak,
+      longestStreak: streakResult.longestStreak,
+      lastActivityDate: new Date(),
+    })
+    .where(eq(users.id, user.id))
+    .returning();
 
-  const activity = await Activity.create({
-    userId: user._id,
-    type: input.type,
-    xpAwarded: xpResult.totalXp,
-    metadata: input.metadata ?? {},
-  });
+  const [activity] = await db
+    .insert(activities)
+    .values({
+      id: uuidv7(),
+      userId: user.id,
+      type: input.type,
+      xpAwarded: xpResult.totalXp,
+      metadata: input.metadata ?? {},
+    })
+    .returning();
+  if (!activity) throw new Error("Failed to create activity");
 
   // Broadcast leaderboard update to WebSocket clients (fire-and-forget)
   broadcastLeaderboard().catch(() => undefined);
 
   // Recalculate team stats for all user's teams (fire-and-forget)
-  const userId = (user._id as { toString(): string }).toString();
-  for (const teamEntry of user.teams) {
-    recalculateTeamStats(teamEntry.teamId.toString()).catch(() => undefined);
+  const userTeams = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, user.id));
+  for (const entry of userTeams) {
+    recalculateTeamStats(entry.teamId).catch(() => undefined);
   }
 
   // Notification triggers (fire-and-forget)
   if (levelInfo.level > previousLevel) {
     createNotification(
-      userId,
+      user.id,
       "level_up",
       "Level Up!",
       `You reached Level ${levelInfo.level}!`,
@@ -78,7 +94,7 @@ export async function recordActivity(
 
   if (streakResult.longestStreak > previousLongestStreak) {
     createNotification(
-      userId,
+      user.id,
       "streak_record",
       "New Streak Record!",
       `Your longest streak is now ${streakResult.longestStreak} days!`,
@@ -86,5 +102,5 @@ export async function recordActivity(
     ).catch(() => undefined);
   }
 
-  return { activity, xpResult, streakResult, user };
+  return { activity, xpResult, streakResult, user: updatedUser ?? user };
 }

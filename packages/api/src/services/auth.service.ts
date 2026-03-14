@@ -1,9 +1,11 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
-import { User } from "../models/user.model.js";
-import type { IUser } from "../models/user.model.js";
-import { RefreshToken } from "../models/refresh-token.model.js";
+import { eq, or } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../config/database.js";
+import { users, refreshTokens } from "../db/schema.js";
+import type { UserRow } from "./user.service.js";
 import { env } from "../config/env.js";
 import { exchangeCodeForToken, getGitHubProfile } from "./github.service.js";
 
@@ -34,10 +36,16 @@ function generateAccessToken(userId: string): string {
 }
 
 async function generateRefreshToken(userId: string): Promise<string> {
+  const db = getDb();
   const token = crypto.randomBytes(64).toString("hex");
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS);
 
-  await RefreshToken.create({ token, userId, expiresAt });
+  await db.insert(refreshTokens).values({
+    id: uuidv7(),
+    token,
+    userId,
+    expiresAt,
+  });
 
   return token;
 }
@@ -52,29 +60,44 @@ export async function register(
   username: string,
   email: string,
   password: string,
-): Promise<{ user: IUser; tokens: TokenPair }> {
-  const existing = await User.findOne({ $or: [{ email }, { username }] });
+): Promise<{ user: UserRow; tokens: TokenPair }> {
+  const db = getDb();
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(or(eq(users.email, email), eq(users.username, username)))
+    .limit(1);
   if (existing) {
     throw new AuthError("User with this email or username already exists");
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-  const user = await User.create({
-    username,
-    email,
-    passwordHash,
-    authProvider: "email",
-  });
+  const [user] = await db
+    .insert(users)
+    .values({
+      id: uuidv7(),
+      username,
+      email,
+      passwordHash,
+      authProvider: "email",
+    })
+    .returning();
+  if (!user) throw new Error("Failed to create user");
 
-  const tokens = await generateTokens((user._id as { toString(): string }).toString());
+  const tokens = await generateTokens(user.id);
   return { user, tokens };
 }
 
 export async function login(
   email: string,
   password: string,
-): Promise<{ user: IUser; tokens: TokenPair }> {
-  const user = await User.findOne({ email });
+): Promise<{ user: UserRow; tokens: TokenPair }> {
+  const db = getDb();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   if (!user || !user.passwordHash) {
     throw new AuthError("Invalid email or password");
   }
@@ -88,73 +111,112 @@ export async function login(
     throw new AuthError("Account banned");
   }
 
-  const tokens = await generateTokens((user._id as { toString(): string }).toString());
+  const tokens = await generateTokens(user.id);
   return { user, tokens };
 }
 
 export async function githubOAuth(
   code: string,
-): Promise<{ user: IUser; tokens: TokenPair }> {
+): Promise<{ user: UserRow; tokens: TokenPair }> {
+  const db = getDb();
   const accessToken = await exchangeCodeForToken(code);
   const profile = await getGitHubProfile(accessToken);
 
   const githubId = String(profile.id);
-  let user = await User.findOne({ githubId });
+  const [existingByGithub] = await db
+    .select()
+    .from(users)
+    .where(eq(users.githubId, githubId))
+    .limit(1);
 
-  if (user) {
-    user.avatarUrl = profile.avatar_url;
-    if (profile.email && !user.email) {
-      user.email = profile.email;
+  let user: UserRow;
+
+  if (existingByGithub) {
+    const updates: Partial<typeof users.$inferInsert> = {
+      avatarUrl: profile.avatar_url,
+    };
+    if (profile.email && !existingByGithub.email) {
+      updates.email = profile.email;
     }
-    await user.save();
+    const [updated] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, existingByGithub.id))
+      .returning();
+    user = updated ?? existingByGithub;
   } else {
     const existingByEmail = profile.email
-      ? await User.findOne({ email: profile.email })
-      : null;
+      ? (
+          await db
+            .select()
+            .from(users)
+            .where(eq(users.email, profile.email))
+            .limit(1)
+        )[0]
+      : undefined;
 
     if (existingByEmail) {
-      existingByEmail.githubId = githubId;
-      existingByEmail.avatarUrl = profile.avatar_url;
-      existingByEmail.authProvider =
-        existingByEmail.authProvider === "email" ? "both" : existingByEmail.authProvider;
-      await existingByEmail.save();
-      user = existingByEmail;
+      const newProvider =
+        existingByEmail.authProvider === "email"
+          ? ("both" as const)
+          : existingByEmail.authProvider;
+      const [updated] = await db
+        .update(users)
+        .set({
+          githubId,
+          avatarUrl: profile.avatar_url,
+          authProvider: newProvider,
+        })
+        .where(eq(users.id, existingByEmail.id))
+        .returning();
+      user = updated ?? existingByEmail;
     } else {
-      user = await User.create({
-        username: profile.login,
-        email: profile.email,
-        githubId,
-        avatarUrl: profile.avatar_url,
-        authProvider: "github",
-      });
+      const [created] = await db
+        .insert(users)
+        .values({
+          id: uuidv7(),
+          username: profile.login,
+          email: profile.email,
+          githubId,
+          avatarUrl: profile.avatar_url,
+          authProvider: "github",
+        })
+        .returning();
+      if (!created) throw new Error("Failed to create user");
+      user = created;
     }
   }
 
-  const tokens = await generateTokens((user._id as { toString(): string }).toString());
+  const tokens = await generateTokens(user.id);
   return { user, tokens };
 }
 
 export async function refreshAccessToken(
   token: string,
 ): Promise<TokenPair> {
-  const stored = await RefreshToken.findOne({ token });
+  const db = getDb();
+  const [stored] = await db
+    .select()
+    .from(refreshTokens)
+    .where(eq(refreshTokens.token, token))
+    .limit(1);
   if (!stored) {
     throw new AuthError("Invalid refresh token");
   }
 
   if (stored.expiresAt < new Date()) {
-    await RefreshToken.deleteOne({ _id: stored._id });
+    await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
     throw new AuthError("Refresh token expired");
   }
 
   // Rotate: delete old, create new pair
-  await RefreshToken.deleteOne({ _id: stored._id });
-  const userId = stored.userId.toString();
-  return generateTokens(userId);
+  await db.delete(refreshTokens).where(eq(refreshTokens.id, stored.id));
+  return generateTokens(stored.userId);
 }
 
 export async function revokeRefreshToken(token: string): Promise<void> {
-  await RefreshToken.deleteOne({ token });
+  const db = getDb();
+  await db.delete(refreshTokens).where(eq(refreshTokens.token, token));
 }
 
 export function verifyAccessToken(token: string): AuthPayload {

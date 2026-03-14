@@ -1,11 +1,18 @@
 import type { MiddlewareHandler } from "hono";
-import { User } from "../models/user.model.js";
+import { eq } from "drizzle-orm";
+import type { AppEnv } from "../types/index.js";
+import { getDb } from "../config/database.js";
+import { users } from "../db/schema.js";
 import { ForbiddenError } from "./error-handler.js";
 
-export const adminMiddleware: MiddlewareHandler = async (c, next) => {
-  const userId = c.get("userId") as string;
+export const adminMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const userId = c.get("userId");
 
-  const user = await User.findById(userId).select("role banned");
+  const db = getDb();
+  const [user] = await db
+    .select({ role: users.role, banned: users.banned })
+    .from(users)
+    .where(eq(users.id, userId));
   if (!user) {
     throw new ForbiddenError("User not found");
   }

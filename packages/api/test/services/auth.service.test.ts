@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { eq } from "drizzle-orm";
 import {
   register,
   login,
@@ -7,7 +8,8 @@ import {
   verifyAccessToken,
   AuthError,
 } from "../../src/services/auth.service.js";
-import { RefreshToken } from "../../src/models/refresh-token.model.js";
+import { getDb } from "../../src/config/database.js";
+import { refreshTokens } from "../../src/db/schema.js";
 
 describe("auth.service", () => {
   describe("register", () => {
@@ -20,11 +22,9 @@ describe("auth.service", () => {
       expect(result.user.authProvider).toBe("email");
       expect(result.tokens.accessToken).toBeTruthy();
       expect(result.tokens.refreshToken).toBeTruthy();
-      // Phase 1 fields preserved
       expect(result.user.xp).toBe(0);
       expect(result.user.level).toBe(1);
       expect(result.user.currentStreak).toBe(0);
-      expect(result.user.achievements).toEqual([]);
     });
 
     it("should reject duplicate email", async () => {
@@ -95,8 +95,13 @@ describe("auth.service", () => {
       expect(newTokens.refreshToken).not.toBe(tokens.refreshToken);
 
       // Old token should be deleted
-      const oldToken = await RefreshToken.findOne({ token: tokens.refreshToken });
-      expect(oldToken).toBeNull();
+      const db = getDb();
+      const [oldToken] = await db
+        .select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.token, tokens.refreshToken))
+        .limit(1);
+      expect(oldToken).toBeUndefined();
     });
 
     it("should reject invalid refresh token", async () => {
@@ -109,8 +114,13 @@ describe("auth.service", () => {
       const { tokens } = await register("revokeuser", "revoke@example.com", "password123");
       await revokeRefreshToken(tokens.refreshToken);
 
-      const stored = await RefreshToken.findOne({ token: tokens.refreshToken });
-      expect(stored).toBeNull();
+      const db = getDb();
+      const [stored] = await db
+        .select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.token, tokens.refreshToken))
+        .limit(1);
+      expect(stored).toBeUndefined();
     });
   });
 });

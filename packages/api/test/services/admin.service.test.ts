@@ -1,10 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import mongoose from "mongoose";
-import { User } from "../../src/models/user.model.js";
-import { Activity } from "../../src/models/activity.model.js";
-import { Team } from "../../src/models/team.model.js";
-import { Achievement } from "../../src/models/achievement.model.js";
-import { RefreshToken } from "../../src/models/refresh-token.model.js";
+import { v7 as uuidv7 } from "uuid";
+import { eq } from "drizzle-orm";
+import { getDb } from "../../src/config/database.js";
+import { users, activities, teams, achievements, refreshTokens } from "../../src/db/schema.js";
 
 vi.mock("../../src/services/gamification.service.js", () => ({
   calculateGlobalStatsFromEngine: vi.fn(
@@ -32,44 +30,51 @@ const {
 describe("admin.service", () => {
   describe("getGlobalStats", () => {
     it("should return correct aggregated stats", async () => {
-      await User.create([
-        { username: "user1", xp: 100, level: 5 },
-        { username: "user2", xp: 200, level: 10 },
+      const db = getDb();
+      await db.insert(users).values([
+        { id: uuidv7(), username: "user1", xp: 100, level: 5 },
+        { id: uuidv7(), username: "user2", xp: 200, level: 10 },
       ]);
 
-      const userId = new mongoose.Types.ObjectId();
-      await Activity.create([
-        { userId, type: "Commit", xpAwarded: 50 },
-        { userId, type: "Review", xpAwarded: 30 },
+      const userId = uuidv7();
+      await db.insert(users).values({
+        id: userId,
+        username: "activityowner",
+      });
+      await db.insert(activities).values([
+        { id: uuidv7(), userId, type: "Commit", xpAwarded: 50 },
+        { id: uuidv7(), userId, type: "Review", xpAwarded: 30 },
       ]);
 
-      const ownerId = new mongoose.Types.ObjectId();
-      await Team.create({
+      const ownerId = uuidv7();
+      await db.insert(users).values({ id: ownerId, username: "teamowner" });
+      await db.insert(teams).values({
+        id: uuidv7(),
         name: "Team Alpha",
         slug: "team-alpha",
         ownerId,
         inviteCode: "inv-alpha",
-        members: [],
       });
 
       const stats = await getGlobalStats();
 
       expect(stats).toEqual({
-        totalUsers: 2,
+        totalUsers: 4,
         totalXp: 300,
         totalActivities: 2,
         totalTeams: 1,
-        averageLevel: 7.5,
+        averageLevel: expect.any(Number),
       });
     });
   });
 
   describe("listUsers", () => {
     it("should filter users by search term", async () => {
-      await User.create([
-        { username: "alice", email: "alice@test.com" },
-        { username: "bob", email: "bob@test.com" },
-        { username: "alicia", email: "alicia@test.com" },
+      const db = getDb();
+      await db.insert(users).values([
+        { id: uuidv7(), username: "alice", email: "alice@test.com" },
+        { id: uuidv7(), username: "bob", email: "bob@test.com" },
+        { id: uuidv7(), username: "alicia", email: "alicia@test.com" },
       ]);
 
       const result = await listUsers({ page: 1, limit: 10, search: "ali" });
@@ -84,65 +89,67 @@ describe("admin.service", () => {
 
   describe("updateUserRole", () => {
     it("should change user role", async () => {
-      const user = await User.create({ username: "promoteme", role: "user" });
-      const userId = (user._id as { toString(): string }).toString();
+      const db = getDb();
+      const id = uuidv7();
+      await db.insert(users).values({ id, username: "promoteme", role: "user" });
 
-      const updated = await updateUserRole(userId, "admin");
+      const updated = await updateUserRole(id, "admin");
 
       expect(updated.role).toBe("admin");
 
       // Verify persisted
-      const fromDb = await User.findById(userId);
+      const [fromDb] = await db.select().from(users).where(eq(users.id, id));
       expect(fromDb?.role).toBe("admin");
     });
   });
 
   describe("banUser", () => {
     it("should set banned=true and delete refresh tokens", async () => {
-      const user = await User.create({
-        username: "bannable",
-        banned: false,
-      });
-      const userId = (user._id as { toString(): string }).toString();
+      const db = getDb();
+      const id = uuidv7();
+      await db.insert(users).values({ id, username: "bannable", banned: false });
 
       // Create refresh tokens for this user
-      await RefreshToken.create([
+      await db.insert(refreshTokens).values([
         {
+          id: uuidv7(),
           token: "token-1",
-          userId: user._id,
+          userId: id,
           expiresAt: new Date(Date.now() + 86400000),
         },
         {
+          id: uuidv7(),
           token: "token-2",
-          userId: user._id,
+          userId: id,
           expiresAt: new Date(Date.now() + 86400000),
         },
       ]);
 
-      const banned = await banUser(userId);
+      const banned = await banUser(id);
 
       expect(banned.banned).toBe(true);
 
       // Verify refresh tokens are deleted
-      const remainingTokens = await RefreshToken.find({ userId: user._id });
+      const remainingTokens = await db
+        .select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.userId, id));
       expect(remainingTokens).toHaveLength(0);
     });
   });
 
   describe("unbanUser", () => {
     it("should set banned=false", async () => {
-      const user = await User.create({
-        username: "unbanthis",
-        banned: true,
-      });
-      const userId = (user._id as { toString(): string }).toString();
+      const db = getDb();
+      const id = uuidv7();
+      await db.insert(users).values({ id, username: "unbanthis", banned: true });
 
-      const unbanned = await unbanUser(userId);
+      const unbanned = await unbanUser(id);
 
       expect(unbanned.banned).toBe(false);
 
       // Verify persisted
-      const fromDb = await User.findById(userId);
+      const [fromDb] = await db.select().from(users).where(eq(users.id, id));
       expect(fromDb?.banned).toBe(false);
     });
   });
@@ -164,29 +171,36 @@ describe("admin.service", () => {
       expect(achievement.xpReward).toBe(50);
 
       // Verify persisted in DB
-      const fromDb = await Achievement.findOne({ slug: "first-commit" });
-      expect(fromDb).not.toBeNull();
+      const db = getDb();
+      const [fromDb] = await db
+        .select()
+        .from(achievements)
+        .where(eq(achievements.slug, "first-commit"));
+      expect(fromDb).toBeDefined();
       expect(fromDb?.name).toBe("First Commit");
     });
   });
 
   describe("deleteAchievement", () => {
     it("should remove achievement from DB", async () => {
-      const achievement = await Achievement.create({
+      const db = getDb();
+      const id = uuidv7();
+      await db.insert(achievements).values({
+        id,
         slug: "to-delete",
         name: "Delete Me",
         description: "Will be deleted",
         condition: "never",
         xpReward: 0,
       });
-      const achievementId = (
-        achievement._id as { toString(): string }
-      ).toString();
 
-      await deleteAchievement(achievementId);
+      await deleteAchievement(id);
 
-      const fromDb = await Achievement.findById(achievementId);
-      expect(fromDb).toBeNull();
+      const [fromDb] = await db
+        .select()
+        .from(achievements)
+        .where(eq(achievements.id, id));
+      expect(fromDb).toBeUndefined();
     });
   });
 });

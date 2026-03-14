@@ -2,8 +2,16 @@
   "name": "@laniakea/engine",
   "version": "0.1.0",
   "type": "module",
-  "main": "index.js",
+  "main": "index.cjs",
   "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.cjs",
+      "import": "./index.cjs",
+      "default": "./index.cjs"
+    }
+  },
   "napi": {
     "name": "engine",
     "triples": {

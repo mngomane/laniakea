@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { adminMiddleware } from "../middleware/admin.middleware.js";
+import type { AppEnv } from "../types/index.js";
 import {
   PaginationSchema,
   UpdateUserRoleSchema,
   CreateAchievementSchema,
   UpdateAchievementSchema,
 } from "../types/index.js";
+import { validateUUID } from "../middleware/validate-uuid.js";
 import {
   getGlobalStats,
   listUsers,
@@ -22,8 +24,7 @@ import {
   getRecentActivities,
 } from "../services/admin.service.js";
 
-interface Env { Variables: { userId: string } }
-const adminRoute = new Hono<Env>();
+const adminRoute = new Hono<AppEnv>();
 
 adminRoute.use("*", authMiddleware);
 adminRoute.use("*", adminMiddleware);
@@ -46,7 +47,7 @@ adminRoute.get("/users", async (c) => {
 });
 
 // Update user role
-adminRoute.patch("/users/:id/role", async (c) => {
+adminRoute.patch("/users/:id/role", validateUUID("id"), async (c) => {
   const userId = c.req.param("id");
   const body = await c.req.json();
   const input = UpdateUserRoleSchema.parse(body);
@@ -55,7 +56,7 @@ adminRoute.patch("/users/:id/role", async (c) => {
 });
 
 // Ban/unban user
-adminRoute.patch("/users/:id/ban", async (c) => {
+adminRoute.patch("/users/:id/ban", validateUUID("id"), async (c) => {
   const userId = c.req.param("id");
   const body = await c.req.json();
   const { banned } = body as { banned: boolean };
@@ -75,7 +76,7 @@ adminRoute.get("/teams", async (c) => {
 });
 
 // Delete team
-adminRoute.delete("/teams/:id", async (c) => {
+adminRoute.delete("/teams/:id", validateUUID("id"), async (c) => {
   const teamId = c.req.param("id");
   await deleteTeamAdmin(teamId);
   return c.json({ message: "Team deleted" });
@@ -96,7 +97,7 @@ adminRoute.post("/achievements", async (c) => {
 });
 
 // Update achievement
-adminRoute.put("/achievements/:id", async (c) => {
+adminRoute.put("/achievements/:id", validateUUID("id"), async (c) => {
   const achievementId = c.req.param("id");
   const body = await c.req.json();
   const input = UpdateAchievementSchema.parse(body);
@@ -105,7 +106,7 @@ adminRoute.put("/achievements/:id", async (c) => {
 });
 
 // Delete achievement
-adminRoute.delete("/achievements/:id", async (c) => {
+adminRoute.delete("/achievements/:id", validateUUID("id"), async (c) => {
   const achievementId = c.req.param("id");
   await deleteAchievement(achievementId);
   return c.json({ message: "Achievement deleted" });

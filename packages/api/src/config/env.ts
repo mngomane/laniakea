@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  MONGODB_URI: z.string().default("mongodb://localhost:27017/laniakea"),
+  DATABASE_URL: z.string(),
   PORT: z.coerce.number().default(3000),
   NODE_ENV: z
     .enum(["development", "production", "test"])

@@ -1,10 +1,13 @@
-import { Notification } from "../models/notification.model.js";
-import type { INotification } from "../models/notification.model.js";
-import { User } from "../models/user.model.js";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { v7 as uuidv7 } from "uuid";
+import { getDb } from "../config/database.js";
+import { users, notifications } from "../db/schema.js";
 import { NotFoundError } from "./user.service.js";
 import { broadcastNotification } from "../ws/broadcast.js";
 import { sendNotificationEmail, levelUpEmailTemplate, achievementEmailTemplate } from "./email.service.js";
 import type { NotificationType } from "../types/index.js";
+
+export type NotificationRow = typeof notifications.$inferSelect;
 
 export async function createNotification(
   userId: string,
@@ -12,23 +15,33 @@ export async function createNotification(
   title: string,
   body: string,
   data?: Record<string, unknown>,
-): Promise<INotification> {
-  const user = await User.findById(userId);
+): Promise<NotificationRow> {
+  const db = getDb();
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) throw new NotFoundError(`User not found: ${userId}`);
 
+  const [notif] = await db
+    .insert(notifications)
+    .values({
+      id: uuidv7(),
+      userId,
+      type,
+      title,
+      body,
+      data: data ?? {},
+    })
+    .returning();
+  if (!notif) throw new Error("Failed to create notification");
+
   // Check if this notification type is muted
-  if (user.notificationPreferences.mutedTypes.includes(type)) {
-    // Still create the notification but don't send real-time
-    const notif = await Notification.create({ userId, type, title, body, data: data ?? {} });
+  if (user.notifyMutedTypes.includes(type)) {
     return notif;
   }
 
-  const notif = await Notification.create({ userId, type, title, body, data: data ?? {} });
-
   // Real-time push if inApp enabled
-  if (user.notificationPreferences.inApp) {
+  if (user.notifyInApp) {
     broadcastNotification(userId, {
-      _id: (notif._id as { toString(): string }).toString(),
+      id: notif.id,
       type: notif.type,
       title: notif.title,
       body: notif.body,
@@ -39,7 +52,7 @@ export async function createNotification(
   }
 
   // Email if enabled
-  if (user.notificationPreferences.email && user.email) {
+  if (user.notifyEmail && user.email) {
     let html: string;
     if (type === "level_up") {
       html = levelUpEmailTemplate(user.username, (data?.level as number) ?? user.level);
@@ -57,45 +70,73 @@ export async function createNotification(
 export async function getUserNotifications(
   userId: string,
   options: { page: number; limit: number; unreadOnly: boolean },
-): Promise<{ notifications: INotification[]; total: number }> {
-  const filter: Record<string, unknown> = { userId };
-  if (options.unreadOnly) filter.read = false;
+): Promise<{ notifications: NotificationRow[]; total: number }> {
+  const db = getDb();
+  const offset = (options.page - 1) * options.limit;
 
-  const skip = (options.page - 1) * options.limit;
-  const [notifications, total] = await Promise.all([
-    Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(options.limit),
-    Notification.countDocuments(filter),
+  const conditions = options.unreadOnly
+    ? and(eq(notifications.userId, userId), eq(notifications.read, false))
+    : eq(notifications.userId, userId);
+
+  const [rows, countResult] = await Promise.all([
+    db
+      .select()
+      .from(notifications)
+      .where(conditions)
+      .orderBy(desc(notifications.createdAt))
+      .offset(offset)
+      .limit(options.limit),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(conditions),
   ]);
-  return { notifications, total };
+
+  return { notifications: rows, total: countResult[0]?.count ?? 0 };
 }
 
 export async function markAsRead(
   userId: string,
   notifId: string,
 ): Promise<void> {
-  const result = await Notification.updateOne(
-    { _id: notifId, userId },
-    { read: true },
-  );
-  if (result.matchedCount === 0) {
+  const db = getDb();
+  const result = await db
+    .update(notifications)
+    .set({ read: true })
+    .where(and(eq(notifications.id, notifId), eq(notifications.userId, userId)))
+    .returning({ id: notifications.id });
+  if (result.length === 0) {
     throw new NotFoundError("Notification not found");
   }
 }
 
 export async function markAllAsRead(userId: string): Promise<void> {
-  await Notification.updateMany({ userId, read: false }, { read: true });
+  const db = getDb();
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
 }
 
 export async function getUnreadCount(userId: string): Promise<number> {
-  return Notification.countDocuments({ userId, read: false });
+  const db = getDb();
+  const [result] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+  return result?.count ?? 0;
 }
 
 export async function deleteNotification(
   userId: string,
   notifId: string,
 ): Promise<void> {
-  const result = await Notification.deleteOne({ _id: notifId, userId });
-  if (result.deletedCount === 0) {
+  const db = getDb();
+  const result = await db
+    .delete(notifications)
+    .where(and(eq(notifications.id, notifId), eq(notifications.userId, userId)))
+    .returning({ id: notifications.id });
+  if (result.length === 0) {
     throw new NotFoundError("Notification not found");
   }
 }
