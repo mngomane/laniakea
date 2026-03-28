@@ -83,6 +83,29 @@ export const DEMO_MARKET_ITEMS: MarketItem[] = [
     iconBg: "bg-error-container/20",
   },
   {
+    id: "nerf-blaster",
+    name: "Nerf Blaster Orbital",
+    description:
+      "Un blaster Nerf aux couleurs de Laniakea. Pour les stand-ups qui s'éternisent.",
+    price: 2800,
+    icon: "target",
+    category: "goodies",
+    iconColor: "text-tertiary",
+    iconBg: "bg-tertiary-container/40",
+  },
+  {
+    id: "nerf-sword",
+    name: "Épée Nerf 'Plasma Edge'",
+    description:
+      "Lame en mousse certifiée sans dégâts collatéraux. Idéale pour trancher les débats techniques.",
+    price: 3500,
+    icon: "swords",
+    category: "goodies",
+    featured: true,
+    iconColor: "text-secondary",
+    iconBg: "bg-secondary-container/20",
+  },
+  {
     id: "theme-deep-space",
     name: "Th\u00e8me HUD 'Deep Space'",
     description:
