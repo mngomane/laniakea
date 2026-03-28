@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { env } from "../config/env.js";
+import { escapeHtml } from "../utils/html.js";
 
 let transporter: Transporter | null = null;
 
@@ -46,18 +47,18 @@ export async function sendNotificationEmail(
 }
 
 export function achievementEmailTemplate(name: string, achievement: string): string {
-  return `<h2>Achievement Unlocked!</h2><p>Congratulations ${name}, you unlocked <strong>${achievement}</strong>!</p>`;
+  return `<h2>Achievement Unlocked!</h2><p>Congratulations ${escapeHtml(name)}, you unlocked <strong>${escapeHtml(achievement)}</strong>!</p>`;
 }
 
 export function levelUpEmailTemplate(name: string, level: number): string {
-  return `<h2>Level Up!</h2><p>Congratulations ${name}, you reached <strong>Level ${level}</strong>!</p>`;
+  return `<h2>Level Up!</h2><p>Congratulations ${escapeHtml(name)}, you reached <strong>Level ${String(level)}</strong>!</p>`;
 }
 
 export function teamInviteEmailTemplate(name: string, teamName: string): string {
-  return `<h2>New Team Member!</h2><p>Hey ${name}, someone just joined your team <strong>${teamName}</strong>!</p>`;
+  return `<h2>New Team Member!</h2><p>Hey ${escapeHtml(name)}, someone just joined your team <strong>${escapeHtml(teamName)}</strong>!</p>`;
 }
 
 export function digestEmailTemplate(name: string, notifications: { title: string; body: string }[]): string {
-  const items = notifications.map((n) => `<li><strong>${n.title}</strong>: ${n.body}</li>`).join("");
-  return `<h2>Notification Digest</h2><p>Hey ${name}, here's what happened:</p><ul>${items}</ul>`;
+  const items = notifications.map((n) => `<li><strong>${escapeHtml(n.title)}</strong>: ${escapeHtml(n.body)}</li>`).join("");
+  return `<h2>Notification Digest</h2><p>Hey ${escapeHtml(name)}, here's what happened:</p><ul>${items}</ul>`;
 }

@@ -9,6 +9,10 @@ import * as schema from "../src/db/schema.js";
 
 // Set test env vars before any module loads env
 process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";
+process.env.JWT_SECRET =
+  "test-jwt-secret-at-least-thirty-two-characters-long";
+process.env.JWT_REFRESH_SECRET =
+  "test-jwt-refresh-secret-at-least-thirty-two-chars";
 process.env.GITHUB_WEBHOOK_SECRET =
   "test-webhook-secret-min-32-characters-long";
 

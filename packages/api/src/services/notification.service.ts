@@ -5,6 +5,7 @@ import { users, notifications } from "../db/schema.js";
 import { NotFoundError } from "./user.service.js";
 import { broadcastNotification } from "../ws/broadcast.js";
 import { sendNotificationEmail, levelUpEmailTemplate, achievementEmailTemplate } from "./email.service.js";
+import { escapeHtml } from "../utils/html.js";
 import type { NotificationType } from "../types/index.js";
 
 export type NotificationRow = typeof notifications.$inferSelect;
@@ -59,7 +60,7 @@ export async function createNotification(
     } else if (type === "achievement") {
       html = achievementEmailTemplate(user.username, title);
     } else {
-      html = `<h2>${title}</h2><p>${body}</p>`;
+      html = `<h2>${escapeHtml(title)}</h2><p>${escapeHtml(body)}</p>`;
     }
     sendNotificationEmail(user.email, title, html).catch(() => undefined);
   }

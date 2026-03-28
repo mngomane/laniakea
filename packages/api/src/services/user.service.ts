@@ -42,3 +42,18 @@ export async function getAllUsers(): Promise<UserRow[]> {
   const db = getDb();
   return db.select().from(users);
 }
+
+export async function getLeaderboardUsers(): Promise<
+  Pick<UserRow, "id" | "username" | "xp" | "level" | "currentStreak">[]
+> {
+  const db = getDb();
+  return db
+    .select({
+      id: users.id,
+      username: users.username,
+      xp: users.xp,
+      level: users.level,
+      currentStreak: users.currentStreak,
+    })
+    .from(users);
+}

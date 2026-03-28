@@ -16,6 +16,7 @@ import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage.js";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage.js";
 import { AdminTeamsPage } from "./pages/admin/AdminTeamsPage.js";
 import { AdminAchievementsPage } from "./pages/admin/AdminAchievementsPage.js";
+import { AuthCallbackPage } from "./pages/AuthCallbackPage.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ export function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
             path="/dashboard"
             element={
