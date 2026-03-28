@@ -23,18 +23,18 @@ export function NotificationItem({ notification, onMarkRead }: NotificationItemP
         notification.read ? "opacity-60" : ""
       }`}
     >
-      <div className="w-8 h-8 rounded-full bg-violet-900 flex items-center justify-center text-xs font-bold text-violet-300 shrink-0">
+      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
         {typeIcons[notification.type] ?? "N"}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{notification.title}</p>
-        <p className="text-xs text-slate-400 mt-0.5">{notification.body}</p>
-        <p className="text-xs text-slate-600 mt-1">{timeAgo}</p>
+        <p className="text-sm font-medium text-on-surface">{notification.title}</p>
+        <p className="text-xs text-on-surface-variant mt-0.5">{notification.body}</p>
+        <p className="text-xs text-outline mt-1">{timeAgo}</p>
       </div>
       {!notification.read && (
         <button
           onClick={() => onMarkRead(notification._id)}
-          className="text-xs text-violet-400 hover:text-violet-300 shrink-0"
+          className="text-xs text-primary hover:text-primary/80 shrink-0"
         >
           Mark read
         </button>

@@ -19,7 +19,7 @@ export type TeamRow = typeof teams.$inferSelect;
 function omitPassword<T extends { passwordHash: string | null }>(
   row: T,
 ): Omit<T, "passwordHash"> {
-  const { passwordHash: _, ...rest } = row;
+  const { passwordHash: _hash, ...rest } = row;
   return rest;
 }
 

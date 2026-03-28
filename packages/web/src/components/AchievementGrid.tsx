@@ -25,7 +25,7 @@ export function AchievementGrid({ achievements, filter = "all" }: AchievementGri
   }
 
   if (slugs.length === 0) {
-    return <p className="text-slate-500 text-sm">No achievements to show</p>;
+    return <p className="text-outline text-sm">No achievements to show</p>;
   }
 
   return (

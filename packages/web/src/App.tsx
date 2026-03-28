@@ -17,6 +17,8 @@ import { AdminUsersPage } from "./pages/admin/AdminUsersPage.js";
 import { AdminTeamsPage } from "./pages/admin/AdminTeamsPage.js";
 import { AdminAchievementsPage } from "./pages/admin/AdminAchievementsPage.js";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage.js";
+import { ShipLogPage } from "./pages/ShipLogPage.js";
+import { MarketPage } from "./pages/MarketPage.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,6 +149,26 @@ export function App() {
                   <AdminLayout>
                     <AdminAchievementsPage />
                   </AdminLayout>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ship-log"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ShipLogPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/market"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <MarketPage />
                 </Layout>
               </ProtectedRoute>
             }

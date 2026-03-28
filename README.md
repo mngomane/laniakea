@@ -4,7 +4,22 @@ Gamification for Developers
 
 ## Overview
 
-Laniakea is a developer gamification platform that tracks coding activities and rewards contributions with XP, streaks, and achievements. It provides team-based competition, leaderboards, and GitHub integration via webhooks.
+Laniakea is a gamification platform for development teams. Named after the supercluster that contains our galaxy, it turns everyday developer work into a space exploration adventure.
+
+Every action — code push, pull request merged, code review submitted, tests passing in production — earns XP. Developers start on planet **Terra-1** (Earth) aboard their own vessel, with the collective objective of reaching **Ares-Base** (Mars) and beyond. The journey progresses as the team accumulates XP.
+
+### Core mechanics
+
+- **XP & Levels**: Every tracked activity (commits, PRs, reviews, merges, issues) awards XP. Accumulate XP to level up.
+- **Streaks**: Consecutive days of activity build streaks, rewarding consistency.
+- **Achievements**: Unlock badges for reaching milestones (first PR, streak records, XP thresholds...).
+- **Special Missions**: Time-limited challenges — refactoring week, quick win marathon, clean code sprint — that award bonus XP.
+- **Marketplace**: Spend earned XP on real goodies (stickers, mugs) or team "gages" — fun forfeits you can assign to colleagues (make coffee for 3 days, do an immediate code review, fix a random legacy bug).
+- **Teams & Leaderboards**: Form squads, compete on team leaderboards, and track collective progress.
+
+### The universe
+
+The space theme is rooted in a real-world inside joke: in the original open-space office, each desk cluster was named after a planet — Earth for the frontend developers, Mars for the backend team. Laniakea turns that joke into a full narrative where every developer is a pilot, every team is a crew, and the codebase is the ship.
 
 ## Architecture
 
@@ -14,7 +29,7 @@ Monorepo managed with pnpm workspaces, combining a Rust computation engine, a No
 |---------|------|------|-------------|
 | `@laniakea/engine` | `packages/engine/` | Rust, napi-rs | Core engine: XP calculation, streaks, achievements, leaderboard |
 | `@laniakea/api` | `packages/api/` | Hono, Drizzle ORM, Vitest | REST API + WebSocket server |
-| `@laniakea/web` | `packages/web/` | React 19, Vite, Tailwind | Frontend application |
+| `@laniakea/web` | `packages/web/` | React 19, Vite, Tailwind CSS 4 | Frontend application (space-themed UI) |
 
 ## Prerequisites
 
@@ -69,15 +84,23 @@ make dev-web    # Start Vite dev server
 | GET | `/api/auth/github` | GitHub OAuth redirect |
 | GET | `/api/auth/github/callback` | GitHub OAuth callback |
 | POST | `/api/auth/refresh` | Refresh access token |
+| POST | `/api/auth/exchange` | Exchange OAuth code for tokens |
 | POST | `/api/auth/logout` | Revoke refresh token |
+| GET | `/api/auth/github/link` | Link GitHub to existing account |
+| GET | `/api/auth/github/link/callback` | GitHub link OAuth callback |
 
 ### Users (`/api/users`)
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/api/users` | Create user |
+| POST | `/api/users` | Create user (admin) |
 | GET | `/api/users/:id` | Get user profile |
 | GET | `/api/users/me` | Get current user profile |
+| PATCH | `/api/users/me` | Update profile (username, email) |
+| POST | `/api/users/me/password` | Change password |
+| POST | `/api/users/me/set-password` | Set password (OAuth-only users) |
+| POST | `/api/users/me/unlink-github` | Unlink GitHub account |
+| POST | `/api/users/me/remove-password` | Remove password auth |
 
 ### Activities (`/api/activities`)
 
@@ -164,6 +187,7 @@ Connect with a JWT access token as query parameter. The server uses heartbeat pi
 | `NODE_ENV` | `development` | Environment (development, production, test) |
 | `JWT_SECRET` | — | JWT signing secret (min 32 chars) |
 | `JWT_REFRESH_SECRET` | — | JWT refresh token secret (min 32 chars) |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
 | `GITHUB_CLIENT_ID` | — | GitHub OAuth app ID |
 | `GITHUB_CLIENT_SECRET` | — | GitHub OAuth app secret |
 | `GITHUB_WEBHOOK_SECRET` | — | GitHub webhook signature secret |
@@ -183,12 +207,26 @@ make api-test       # 80 API tests (Vitest)
 make verify         # Full verification pipeline
 ```
 
+## Frontend Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/dashboard` | Mission Control | Journey map (Earth to Mars), XP stats, pilot profile, activity terminal |
+| `/leaderboard` | Navigation | Top 3 podium, pilot registry, fleet density |
+| `/achievements` | Telemetry | Achievement badges (unlocked/locked) |
+| `/ship-log` | Ship Log | Special missions with objectives and XP rewards |
+| `/market` | Engine Room | XP marketplace — goodies, team gages, cosmetics |
+| `/teams` | Fleet | Team management, creation, leaderboards |
+| `/settings` | Settings | Profile editing, auth method linking, notifications |
+| `/admin` | Command | Admin dashboard, user/team/achievement management |
+
 ## Tech Stack
 
 - **Engine**: Rust, napi-rs (Node.js native addon)
 - **API**: Hono, Drizzle ORM, JWT, Zod, Nodemailer
-- **Web**: React 19, Vite, Tailwind CSS
-- **Database**: PostgreSQL
+- **Web**: React 19, Vite, Tailwind CSS 4, Zustand, TanStack React Query, React Router
+- **Database**: PostgreSQL (Drizzle ORM)
+- **Design**: Material Design 3 dark theme, Space Grotesk + Inter fonts, Material Symbols icons
 - **Runtime**: Node.js 22+, pnpm 10+
 
 ## Legacy

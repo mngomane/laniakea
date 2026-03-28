@@ -42,6 +42,31 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string(),
 });
 
+export const UpdateProfileSchema = z.object({
+  username: z.string().min(3).max(30).optional(),
+  email: z.string().email().optional(),
+}).refine(
+  (data) => data.username !== undefined || data.email !== undefined,
+  { message: "At least one field must be provided" },
+);
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(8).max(128),
+});
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
+
+export const SetPasswordSchema = z.object({
+  password: z.string().min(8).max(128),
+});
+export type SetPasswordInput = z.infer<typeof SetPasswordSchema>;
+
+export const UnlinkGitHubSchema = z.object({
+  password: z.string().min(1),
+});
+export type UnlinkGitHubInput = z.infer<typeof UnlinkGitHubSchema>;
+
 export interface AuthPayload {
   userId: string;
 }

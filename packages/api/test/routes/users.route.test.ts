@@ -43,7 +43,7 @@ describe("users.route", () => {
 
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.username).toBe("routeuser");
+    expect(body.user.username).toBe("routeuser");
   });
 
   it("POST /api/users with invalid body returns 400", async () => {
@@ -70,14 +70,14 @@ describe("users.route", () => {
       },
       body: JSON.stringify({ username: "getuser" }),
     });
-    const created = (await createRes.json()) as { id: string };
+    const created = (await createRes.json()) as { user: { id: string } };
 
-    const res = await app.request(`/api/users/${created.id}`, {
+    const res = await app.request(`/api/users/${created.user.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.username).toBe("getuser");
+    expect(body.user.username).toBe("getuser");
   });
 
   it("GET /api/users/:nonexistent returns 404", async () => {
