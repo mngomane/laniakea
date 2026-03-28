@@ -125,6 +125,14 @@
     'opsz' 24;
 }
 
+/* ── Grid Background (Login) ── */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(72, 70, 76, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(72, 70, 76, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
 /* ── Base Body ── */
 body {
   font-family: 'Inter', sans-serif;
