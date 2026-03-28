@@ -216,7 +216,7 @@ export async function listAchievements(): Promise<AchievementRow[]> {
   return db.select().from(achievements).orderBy(desc(achievements.createdAt));
 }
 
-export async function getRecentActivities(limit = 50): Promise<unknown[]> {
+export async function getRecentActivities(limit = 50) {
   const db = getDb();
   const rows = await db
     .select({
@@ -235,3 +235,5 @@ export async function getRecentActivities(limit = 50): Promise<unknown[]> {
     .limit(limit);
   return rows;
 }
+
+export type ActivityRecord = Awaited<ReturnType<typeof getRecentActivities>>[number];

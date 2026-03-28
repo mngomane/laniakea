@@ -13,11 +13,25 @@ import { notificationsRoute } from "./routes/notifications.route.js";
 import { adminRoute } from "./routes/admin.route.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { setupWebSocket } from "./ws/index.js";
+import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 import type { AppEnv } from "./types/index.js";
 
 const app = new Hono<AppEnv>();
 
 app.onError(errorHandler);
+
+app.use("*", secureHeaders());
+app.use(
+  "/api/*",
+  cors({
+    origin: env.CORS_ORIGIN.split(","),
+    credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400,
+  }),
+);
 
 app.route("/api/auth", authRoute);
 app.route("/api/webhooks", webhooksRoute);

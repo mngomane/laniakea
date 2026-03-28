@@ -5,6 +5,10 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://laniakea:laniakea@localhost:5432/laniakea",
+    url: (() => {
+      const url = process.env.DATABASE_URL;
+      if (!url) throw new Error("DATABASE_URL environment variable is required");
+      return url;
+    })(),
   },
 });

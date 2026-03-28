@@ -6,8 +6,9 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
-  JWT_SECRET: z.string().min(32).default("dev-jwt-secret-change-in-production-min32chars"),
-  JWT_REFRESH_SECRET: z.string().min(32).default("dev-jwt-refresh-secret-change-in-prod-min32"),
+  JWT_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
   GITHUB_CLIENT_ID: z.string().default(""),
   GITHUB_CLIENT_SECRET: z.string().default(""),
   GITHUB_WEBHOOK_SECRET: z.string().default(""),
