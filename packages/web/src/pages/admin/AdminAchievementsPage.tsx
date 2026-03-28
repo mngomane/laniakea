@@ -22,31 +22,31 @@ export function AdminAchievementsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Achievements</h1>
+        <h1 className="text-2xl font-headline font-bold text-on-surface">Achievements</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="bg-primary hover:bg-primary/80 text-on-surface px-4 py-2 rounded-lg text-sm font-medium"
         >
           {showForm ? "Cancel" : "Create Achievement"}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={(e) => void handleCreate(e)} className="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6 space-y-3">
+        <form onSubmit={(e) => void handleCreate(e)} className="bg-surface-container-low border border-outline-variant rounded-lg p-4 mb-6 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input
               placeholder="Slug"
               value={form.slug}
               onChange={(e) => setForm({ ...form, slug: e.target.value })}
               required
-              className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+              className="bg-background border border-outline-variant rounded px-3 py-2 text-sm text-on-surface"
             />
             <input
               placeholder="Name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+              className="bg-background border border-outline-variant rounded px-3 py-2 text-sm text-on-surface"
             />
           </div>
           <input
@@ -54,7 +54,7 @@ export function AdminAchievementsPage() {
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             required
-            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+            className="w-full bg-background border border-outline-variant rounded px-3 py-2 text-sm text-on-surface"
           />
           <div className="grid grid-cols-2 gap-3">
             <input
@@ -62,7 +62,7 @@ export function AdminAchievementsPage() {
               value={form.condition}
               onChange={(e) => setForm({ ...form, condition: e.target.value })}
               required
-              className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+              className="bg-background border border-outline-variant rounded px-3 py-2 text-sm text-on-surface"
             />
             <input
               type="number"
@@ -70,22 +70,22 @@ export function AdminAchievementsPage() {
               value={form.xpReward}
               onChange={(e) => setForm({ ...form, xpReward: Number(e.target.value) })}
               min={0}
-              className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"
+              className="bg-background border border-outline-variant rounded px-3 py-2 text-sm text-on-surface"
             />
           </div>
-          <button type="submit" disabled={createAchievement.isPending} className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded text-sm">
+          <button type="submit" disabled={createAchievement.isPending} className="bg-primary hover:bg-primary/80 text-on-surface px-4 py-2 rounded text-sm">
             {createAchievement.isPending ? "Creating..." : "Create"}
           </button>
         </form>
       )}
 
       {isLoading ? (
-        <p className="text-slate-400">Loading...</p>
+        <p className="text-on-surface-variant">Loading...</p>
       ) : (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+        <div className="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-slate-500 text-xs border-b border-slate-700">
+              <tr className="text-outline text-xs border-b border-outline-variant">
                 <th className="px-4 py-2 text-left">Slug</th>
                 <th className="px-4 py-2 text-left">Name</th>
                 <th className="px-4 py-2 text-left">Description</th>
@@ -93,17 +93,17 @@ export function AdminAchievementsPage() {
                 <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-outline-variant">
               {achievements?.map((a) => (
-                <tr key={a._id} className="text-slate-300">
+                <tr key={a._id} className="text-on-surface-variant">
                   <td className="px-4 py-2 font-mono text-xs">{a.slug}</td>
                   <td className="px-4 py-2">{a.name}</td>
-                  <td className="px-4 py-2 text-slate-500 text-xs">{a.description}</td>
+                  <td className="px-4 py-2 text-outline text-xs">{a.description}</td>
                   <td className="px-4 py-2 text-right">{a.xpReward}</td>
                   <td className="px-4 py-2 text-center">
                     <button
                       onClick={() => void deleteAchievement.mutateAsync(a._id)}
-                      className="text-xs text-red-400 hover:text-red-300"
+                      className="text-xs text-error hover:text-error/80"
                     >
                       Delete
                     </button>

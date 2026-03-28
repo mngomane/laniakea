@@ -14,10 +14,10 @@ export function TeamsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Teams</h1>
+        <h1 className="text-2xl font-headline font-bold text-on-surface">Teams</h1>
         <Link
           to="/teams/create"
-          className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-primary hover:bg-primary/80 text-on-surface px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           Create Team
         </Link>
@@ -27,7 +27,7 @@ export function TeamsPage() {
         <button
           onClick={() => setTab("my")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === "my" ? "bg-violet-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+            tab === "my" ? "bg-primary text-on-surface" : "bg-surface-container-low text-on-surface-variant hover:text-on-surface"
           }`}
         >
           My Teams
@@ -35,7 +35,7 @@ export function TeamsPage() {
         <button
           onClick={() => setTab("public")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === "public" ? "bg-violet-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+            tab === "public" ? "bg-primary text-on-surface" : "bg-surface-container-low text-on-surface-variant hover:text-on-surface"
           }`}
         >
           Public Teams
@@ -43,9 +43,9 @@ export function TeamsPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-slate-400">Loading teams...</p>
+        <p className="text-on-surface-variant">Loading teams...</p>
       ) : teams.length === 0 ? (
-        <p className="text-slate-500">
+        <p className="text-outline">
           {tab === "my" ? "You haven't joined any teams yet." : "No public teams found."}
         </p>
       ) : (

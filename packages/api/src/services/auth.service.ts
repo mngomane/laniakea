@@ -219,6 +219,179 @@ export async function revokeRefreshToken(token: string): Promise<void> {
   await db.delete(refreshTokens).where(eq(refreshTokens.token, token));
 }
 
+export async function linkGitHub(
+  userId: string,
+  code: string,
+): Promise<UserRow> {
+  const db = getDb();
+  const accessToken = await exchangeCodeForToken(code);
+  const profile = await getGitHubProfile(accessToken);
+  const githubId = String(profile.id);
+
+  return db.transaction(async (tx) => {
+    // Ensure this GitHub account is not already linked to another user
+    const [existingGh] = await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.githubId, githubId))
+      .limit(1);
+    if (existingGh && existingGh.id !== userId) {
+      throw new AuthError("This GitHub account is already linked to another user");
+    }
+
+    const [user] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) throw new AuthError("User not found");
+
+    if (user.githubId) {
+      throw new AuthError("GitHub account already linked");
+    }
+
+    const [updated] = await tx
+      .update(users)
+      .set({
+        githubId,
+        avatarUrl: profile.avatar_url,
+        authProvider: "both",
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated) throw new AuthError("Failed to link GitHub account");
+    return updated;
+  });
+}
+
+export async function setPassword(
+  userId: string,
+  password: string,
+): Promise<void> {
+  const db = getDb();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) throw new AuthError("User not found");
+
+  if (user.authProvider !== "github") {
+    throw new AuthError("Account already has a password");
+  }
+
+  const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  await db
+    .update(users)
+    .set({ passwordHash: hash, authProvider: "both", updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
+export async function unlinkGitHub(
+  userId: string,
+  password: string,
+): Promise<void> {
+  const db = getDb();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) throw new AuthError("User not found");
+
+  if (user.authProvider !== "both") {
+    throw new AuthError("Cannot unlink GitHub — it is your only auth method");
+  }
+
+  if (!user.passwordHash) {
+    throw new AuthError("Cannot unlink GitHub — no password set");
+  }
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) {
+    throw new AuthError("Incorrect password");
+  }
+
+  await db
+    .update(users)
+    .set({
+      githubId: null,
+      authProvider: "email",
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function removePassword(userId: string): Promise<void> {
+  const db = getDb();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) throw new AuthError("User not found");
+
+  if (user.authProvider !== "both") {
+    throw new AuthError("Cannot remove password — it is your only auth method");
+  }
+
+  if (!user.githubId) {
+    throw new AuthError("Cannot remove password — no GitHub account linked");
+  }
+
+  await db
+    .update(users)
+    .set({
+      passwordHash: null,
+      authProvider: "github",
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const db = getDb();
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) {
+    throw new AuthError("User not found");
+  }
+
+  if (user.authProvider === "github") {
+    throw new AuthError(
+      "Password change not available for GitHub-only accounts",
+    );
+  }
+
+  if (!user.passwordHash) {
+    throw new AuthError("No password set for this account");
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    throw new AuthError("Current password is incorrect");
+  }
+
+  const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  await db
+    .update(users)
+    .set({ passwordHash: newHash, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
 export function verifyAccessToken(token: string): AuthPayload {
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as AuthPayload;

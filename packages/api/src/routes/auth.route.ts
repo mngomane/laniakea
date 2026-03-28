@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
+import { z } from "zod";
 import type { AppEnv } from "../types/index.js";
 import {
   RegisterSchema,
@@ -10,14 +11,18 @@ import {
   register,
   login,
   githubOAuth,
+  linkGitHub,
   refreshAccessToken,
   revokeRefreshToken,
 } from "../services/auth.service.js";
 import { stripPasswordHash } from "../services/user.service.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   generateOAuthState,
   storeOAuthTokens,
   exchangeOAuthCode,
+  storeLinkRequest,
+  getLinkRequest,
 } from "../services/oauth-store.js";
 import { rateLimiter } from "../middleware/rate-limiter.js";
 import { env } from "../config/env.js";
@@ -68,7 +73,10 @@ authRoute.get("/github", authLimiter, (c) => {
     secure: env.NODE_ENV === "production",
   });
 
-  const redirectUri = `${c.req.url.replace("/auth/github", "/auth/github/callback")}`;
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace("/auth/github", "/auth/github/callback");
+  url.search = "";
+  const redirectUri = url.toString();
   const params = new URLSearchParams({
     client_id: env.GITHUB_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -106,15 +114,83 @@ authRoute.get("/github/callback", authLimiter, async (c) => {
 
 authRoute.post("/exchange", authLimiter, async (c) => {
   const body = await c.req.json();
-  const code = (body as { code?: string }).code;
-  if (!code || typeof code !== "string") {
+  const parsed = z.object({ code: z.string() }).safeParse(body);
+  if (!parsed.success) {
     return c.json({ error: "Missing code" }, 400);
   }
-  const tokens = exchangeOAuthCode(code);
+  const tokens = exchangeOAuthCode(parsed.data.code);
   if (!tokens) {
     return c.json({ error: "Invalid or expired code" }, 401);
   }
   return c.json({ tokens }, 200);
+});
+
+// --- Link GitHub to existing account (requires auth) ---
+
+authRoute.get("/github/link", authMiddleware, authLimiter, (c) => {
+  const userId = c.get("userId");
+  const state = generateOAuthState();
+  const linkToken = storeLinkRequest(userId);
+
+  setCookie(c, "oauth_state", state, {
+    httpOnly: true,
+    sameSite: "Strict",
+    maxAge: 300,
+    path: "/api/auth",
+    secure: env.NODE_ENV === "production",
+  });
+  setCookie(c, "oauth_link_token", linkToken, {
+    httpOnly: true,
+    sameSite: "Strict",
+    maxAge: 300,
+    path: "/api/auth",
+    secure: env.NODE_ENV === "production",
+  });
+
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace("/auth/github/link", "/auth/github/link/callback");
+  url.search = "";
+  const redirectUri = url.toString();
+  const params = new URLSearchParams({
+    client_id: env.GITHUB_CLIENT_ID,
+    redirect_uri: redirectUri,
+    scope: "user:email",
+    state,
+  });
+  return c.redirect(
+    `https://github.com/login/oauth/authorize?${params.toString()}`,
+  );
+});
+
+authRoute.get("/github/link/callback", authMiddleware, authLimiter, async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const storedState = getCookie(c, "oauth_state");
+  const linkToken = getCookie(c, "oauth_link_token");
+
+  deleteCookie(c, "oauth_state", { path: "/api/auth" });
+  deleteCookie(c, "oauth_link_token", { path: "/api/auth" });
+
+  if (!code || !state || !storedState || state !== storedState || !linkToken) {
+    return c.redirect("/settings?error=github_link_failed");
+  }
+
+  const userId = getLinkRequest(linkToken);
+  if (!userId) {
+    return c.redirect("/settings?error=github_link_expired");
+  }
+
+  // Verify authenticated user matches the link request
+  if (userId !== c.get("userId")) {
+    return c.json({ error: "Forbidden: user mismatch" }, 403);
+  }
+
+  try {
+    await linkGitHub(userId, code);
+    return c.redirect("/settings?linked=github");
+  } catch {
+    return c.redirect("/settings?error=github_link_failed");
+  }
 });
 
 authRoute.post("/refresh", authLimiter, async (c) => {

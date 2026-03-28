@@ -24,15 +24,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="flex gap-6">
       <aside className="w-48 shrink-0">
-        <nav className="bg-slate-800 border border-slate-700 rounded-lg p-3 space-y-1">
+        <nav className="bg-surface-container-low border border-outline-variant rounded-lg p-3 space-y-1">
           {adminNav.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={`block px-3 py-2 rounded text-sm transition-colors ${
                 location.pathname === item.path
-                  ? "bg-violet-600 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-700"
+                  ? "bg-primary text-on-surface"
+                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
               }`}
             >
               {item.label}

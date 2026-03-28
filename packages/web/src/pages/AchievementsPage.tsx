@@ -19,7 +19,7 @@ export function AchievementsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Achievements</h1>
+        <h1 className="text-2xl font-headline font-bold text-on-surface">Achievements</h1>
         <div className="flex gap-2">
           {filters.map((f) => (
             <button
@@ -27,8 +27,8 @@ export function AchievementsPage() {
               onClick={() => setFilter(f.value)}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 filter === f.value
-                  ? "bg-violet-600 text-white"
-                  : "bg-slate-700 text-slate-400 hover:text-white"
+                  ? "bg-primary text-on-surface"
+                  : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"
               }`}
             >
               {f.label}

@@ -34,3 +34,34 @@ export function exchangeOAuthCode(code: string): TokenPair | null {
 export function generateOAuthState(): string {
   return crypto.randomBytes(16).toString("hex");
 }
+
+// --- Link request store (maps token → userId for GitHub account linking) ---
+
+interface PendingLink {
+  userId: string;
+  expiresAt: number;
+}
+
+const linkStore = new Map<string, PendingLink>();
+
+const linkCleanup = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of linkStore) {
+    if (entry.expiresAt <= now) linkStore.delete(key);
+  }
+}, 30_000);
+linkCleanup.unref();
+
+export function storeLinkRequest(userId: string): string {
+  const token = crypto.randomBytes(32).toString("hex");
+  linkStore.set(token, { userId, expiresAt: Date.now() + TTL_MS });
+  return token;
+}
+
+export function getLinkRequest(token: string): string | null {
+  const entry = linkStore.get(token);
+  if (!entry) return null;
+  linkStore.delete(token);
+  if (entry.expiresAt <= Date.now()) return null;
+  return entry.userId;
+}

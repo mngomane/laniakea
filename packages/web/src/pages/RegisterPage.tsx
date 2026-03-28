@@ -43,19 +43,19 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-white text-center mb-2">
-          Join Laniakea
+        <h1 className="text-3xl font-headline font-bold text-on-surface text-center mb-2">
+          LANIAKEA
         </h1>
-        <p className="text-slate-400 text-center mb-8">
+        <p className="text-on-surface-variant text-center mb-8">
           Start earning XP for your contributions
         </p>
 
-        <div className="bg-slate-800 rounded-xl p-6">
+        <div className="bg-surface-container-low rounded-xl p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/50 text-red-400 text-sm rounded-lg p-3">
+              <div className="bg-error-container/10 border border-error/50 text-error text-sm rounded-lg p-3">
                 {error}
               </div>
             )}
@@ -64,7 +64,7 @@ export function RegisterPage() {
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-slate-700 text-white rounded-lg px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 placeholder-outline focus:outline-none focus:ring-2 focus:ring-primary"
               required
               minLength={3}
               maxLength={30}
@@ -74,7 +74,7 @@ export function RegisterPage() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-700 text-white rounded-lg px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 placeholder-outline focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
             <input
@@ -82,7 +82,7 @@ export function RegisterPage() {
               placeholder="Password (min 8 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-700 text-white rounded-lg px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 placeholder-outline focus:outline-none focus:ring-2 focus:ring-primary"
               required
               minLength={8}
             />
@@ -91,21 +91,21 @@ export function RegisterPage() {
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-slate-700 text-white rounded-lg px-4 py-2.5 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full bg-surface-container-high text-on-surface rounded-lg px-4 py-2.5 placeholder-outline focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-violet-600 hover:bg-violet-500 disabled:bg-violet-800 text-white py-2.5 rounded-lg font-medium transition-colors"
+              className="w-full bg-primary hover:bg-primary/80 disabled:bg-primary/30 text-on-surface py-2.5 rounded-lg font-medium transition-colors"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-4">
+          <p className="text-center text-sm text-outline mt-4">
             Already have an account?{" "}
-            <Link to="/login" className="text-violet-400 hover:text-violet-300">
+            <Link to="/login" className="text-primary hover:text-primary/80">
               Sign in
             </Link>
           </p>

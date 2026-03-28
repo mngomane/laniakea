@@ -20,14 +20,14 @@ export function AchievementCard({ slug, unlocked, unlockedAt }: AchievementCardP
     <div
       className={`rounded-xl p-4 border ${
         unlocked
-          ? "bg-slate-800 border-violet-500/50"
-          : "bg-slate-800/50 border-slate-700 opacity-50"
+          ? "bg-surface-container-low border-primary/50"
+          : "bg-surface-container-low/50 border-outline-variant opacity-50"
       }`}
     >
-      <div className="text-2xl mb-2">{unlocked ? "🏆" : "🔒"}</div>
-      <div className="text-sm font-medium text-white">{name}</div>
+      <div className="text-2xl mb-2">{unlocked ? "\u{1F3C6}" : "\u{1F512}"}</div>
+      <div className="text-sm font-medium text-on-surface">{name}</div>
       {unlocked && unlockedAt && (
-        <div className="text-xs text-slate-500 mt-1">
+        <div className="text-xs text-outline mt-1">
           {new Date(unlockedAt).toLocaleDateString()}
         </div>
       )}

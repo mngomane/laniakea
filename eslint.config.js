@@ -9,6 +9,14 @@ export default tseslint.config(
     ignores: ["src/", "scripts/", "**/dist/", "**/node_modules/", "**/coverage/", "**/*.node"],
   },
   {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     files: ["**/test/**/*.ts", "**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-non-null-assertion": "off",

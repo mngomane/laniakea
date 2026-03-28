@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface UserTeamEntry {
   teamId: string;
@@ -45,25 +46,32 @@ interface AuthState {
 
 export type { User };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  accessToken: null,
-  refreshToken: null,
-  isAuthenticated: false,
-
-  setAuth: (user, accessToken, refreshToken) =>
-    set({ user, accessToken, refreshToken, isAuthenticated: true }),
-
-  setTokens: (accessToken, refreshToken) =>
-    set({ accessToken, refreshToken }),
-
-  updateUser: (user) => set({ user }),
-
-  logout: () =>
-    set({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+
+      setAuth: (user, accessToken, refreshToken) =>
+        set({ user, accessToken, refreshToken, isAuthenticated: true }),
+
+      setTokens: (accessToken, refreshToken) =>
+        set({ accessToken, refreshToken }),
+
+      updateUser: (user) => set({ user }),
+
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        }),
     }),
-}));
+    {
+      name: "laniakea-auth",
+    },
+  ),
+);

@@ -10,6 +10,13 @@ export class ForbiddenError extends Error {
   }
 }
 
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConflictError";
+  }
+}
+
 export const errorHandler: ErrorHandler = (err, c) => {
   if (err instanceof ZodError) {
     return c.json(
@@ -24,6 +31,10 @@ export const errorHandler: ErrorHandler = (err, c) => {
 
   if (err instanceof ForbiddenError) {
     return c.json({ error: err.message }, 403);
+  }
+
+  if (err instanceof ConflictError) {
+    return c.json({ error: err.message }, 409);
   }
 
   if (err instanceof NotFoundError) {
