@@ -90,22 +90,6 @@ export function LoginPage() {
               </div>
             )}
 
-            {/* GitHub Login */}
-            <button
-              onClick={loginWithGitHub}
-              className="w-full group relative flex items-center justify-center gap-3 bg-primary py-4 px-6 transition-all duration-200 active:scale-95 shadow-[0_0_20px_rgba(0,220,229,0.15)] hover:shadow-[0_0_30px_rgba(0,220,229,0.25)]"
-            >
-              <span className="material-symbols-outlined text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
-              <span className="font-label text-sm font-bold tracking-widest text-on-primary">CONNEXION VIA GITHUB</span>
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4 py-2">
-              <div className="h-[1px] flex-1 bg-outline-variant/20" />
-              <span className="font-label text-[0.625rem] tracking-widest text-on-surface-variant opacity-50 uppercase">Ou via identifiants</span>
-              <div className="h-[1px] flex-1 bg-outline-variant/20" />
-            </div>
-
             {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
@@ -154,13 +138,29 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-surface-container-high border border-outline-variant/20 py-4 px-6 mt-4 hover:bg-surface-bright hover:border-primary/50 transition-all duration-300 active:scale-95 group disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full bg-primary py-4 px-6 mt-4 transition-all duration-200 active:scale-95 shadow-[0_0_20px_rgba(0,220,229,0.15)] hover:shadow-[0_0_30px_rgba(0,220,229,0.25)] disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <span className="font-label text-sm font-bold tracking-[0.2em] text-on-surface group-hover:text-primary">
+                <span className="font-label text-sm font-bold tracking-[0.2em] text-on-primary">
                   {loading ? "INITIALISATION..." : "INITIALISER LA SESSION"}
                 </span>
               </button>
             </form>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 py-2">
+              <div className="h-[1px] flex-1 bg-outline-variant/20" />
+              <span className="font-label text-[0.625rem] tracking-widest text-on-surface-variant opacity-50 uppercase">Ou via protocole externe</span>
+              <div className="h-[1px] flex-1 bg-outline-variant/20" />
+            </div>
+
+            {/* GitHub Login */}
+            <button
+              onClick={loginWithGitHub}
+              className="w-full group relative flex items-center justify-center gap-3 bg-surface-container-high border border-outline-variant/20 py-4 px-6 hover:bg-surface-bright hover:border-primary/50 transition-all duration-300 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-on-surface group-hover:text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
+              <span className="font-label text-sm font-bold tracking-widest text-on-surface group-hover:text-primary">CONNEXION VIA GITHUB</span>
+            </button>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, Link, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth.js";
 import { MaterialIcon } from "../ui/MaterialIcon.js";
 
@@ -19,15 +19,12 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col z-40 bg-[#1b1b22]/60 backdrop-blur-xl border-r border-[#48464c]/15 shadow-[0px_8px_32px_rgba(0,220,229,0.04)]">
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 flex-col z-40 bg-[#1b1b22]/60 backdrop-blur-xl border-r border-[#48464c]/15 shadow-[0px_8px_32px_rgba(0,220,229,0.04)]">
       {/* Header */}
-      <div className="p-6">
-        <h1 className="text-[#00dce5] font-black tracking-tighter text-xl">
-          LANIAKEA
-        </h1>
-        <p className="font-headline uppercase tracking-wider text-[0.6875rem] text-primary">
-          SYSTEM: ACTIVE
-        </p>
+      <div className="p-4 flex justify-center">
+        <Link to="/dashboard" className="block hover:opacity-80 transition-opacity">
+          <img src="/favicon.png" alt="Laniakea" className="w-20 h-20 rounded-sm" />
+        </Link>
       </div>
 
       {/* Nav */}

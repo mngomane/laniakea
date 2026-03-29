@@ -73,10 +73,7 @@ authRoute.get("/github", authLimiter, (c) => {
     secure: env.NODE_ENV === "production",
   });
 
-  const url = new URL(c.req.url);
-  url.pathname = url.pathname.replace("/auth/github", "/auth/github/callback");
-  url.search = "";
-  const redirectUri = url.toString();
+  const redirectUri = `${env.CORS_ORIGIN}/api/auth/github/callback`;
   const params = new URLSearchParams({
     client_id: env.GITHUB_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -96,19 +93,19 @@ authRoute.get("/github/callback", authLimiter, async (c) => {
   deleteCookie(c, "oauth_state", { path: "/api/auth" });
 
   if (!code) {
-    return c.redirect("/login?error=github_missing_code");
+    return c.redirect(`${env.CORS_ORIGIN}/login?error=github_missing_code`);
   }
 
   if (!state || !storedState || state !== storedState) {
-    return c.redirect("/login?error=github_invalid_state");
+    return c.redirect(`${env.CORS_ORIGIN}/login?error=github_invalid_state`);
   }
 
   try {
     const { tokens } = await githubOAuth(code);
     const exchangeCode = storeOAuthTokens(tokens);
-    return c.redirect(`/auth/callback?code=${exchangeCode}`);
+    return c.redirect(`${env.CORS_ORIGIN}/auth/callback?code=${exchangeCode}`);
   } catch {
-    return c.redirect("/login?error=github_auth_failed");
+    return c.redirect(`${env.CORS_ORIGIN}/login?error=github_auth_failed`);
   }
 });
 
@@ -147,10 +144,7 @@ authRoute.get("/github/link", authMiddleware, authLimiter, (c) => {
     secure: env.NODE_ENV === "production",
   });
 
-  const url = new URL(c.req.url);
-  url.pathname = url.pathname.replace("/auth/github/link", "/auth/github/link/callback");
-  url.search = "";
-  const redirectUri = url.toString();
+  const redirectUri = `${env.CORS_ORIGIN}/api/auth/github/link/callback`;
   const params = new URLSearchParams({
     client_id: env.GITHUB_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -172,12 +166,12 @@ authRoute.get("/github/link/callback", authMiddleware, authLimiter, async (c) =>
   deleteCookie(c, "oauth_link_token", { path: "/api/auth" });
 
   if (!code || !state || !storedState || state !== storedState || !linkToken) {
-    return c.redirect("/settings?error=github_link_failed");
+    return c.redirect(`${env.CORS_ORIGIN}/settings?error=github_link_failed`);
   }
 
   const userId = getLinkRequest(linkToken);
   if (!userId) {
-    return c.redirect("/settings?error=github_link_expired");
+    return c.redirect(`${env.CORS_ORIGIN}/settings?error=github_link_expired`);
   }
 
   // Verify authenticated user matches the link request
@@ -187,9 +181,9 @@ authRoute.get("/github/link/callback", authMiddleware, authLimiter, async (c) =>
 
   try {
     await linkGitHub(userId, code);
-    return c.redirect("/settings?linked=github");
+    return c.redirect(`${env.CORS_ORIGIN}/settings?linked=github`);
   } catch {
-    return c.redirect("/settings?error=github_link_failed");
+    return c.redirect(`${env.CORS_ORIGIN}/settings?error=github_link_failed`);
   }
 });
 
