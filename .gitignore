@@ -31,5 +31,8 @@ Thumbs.db
 # Logs
 *.log
 
+# Docker
+docker-compose.yml
+
 # Claude local audit reports
 CLAUDE.local.md
