@@ -31,5 +31,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Docker
+docker-compose.yml
+
+# Backups
+*.bak*
+
 # Claude local audit reports
 CLAUDE.local.md
