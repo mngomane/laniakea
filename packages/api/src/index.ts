@@ -49,9 +49,12 @@ async function main(): Promise<void> {
   await connectDatabase(env.DATABASE_URL);
   console.log("Connected to PostgreSQL");
 
-  const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-    console.log(`Server running on http://localhost:${info.port}`);
-  });
+  const server = serve(
+    { fetch: app.fetch, port: env.PORT, hostname: "127.0.0.1" },
+    (info) => {
+      console.log(`Server running on http://127.0.0.1:${info.port}`);
+    },
+  );
 
   setupWebSocket(server as import("node:http").Server);
   console.log("WebSocket server ready on /ws");
